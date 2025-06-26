@@ -5,6 +5,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.model.Appointment;
 import com.ambulanta.zakazivanje_pregleda.model.AppointmentStatus;
 import com.ambulanta.zakazivanje_pregleda.service.AppointmentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,10 @@ import java.util.List;
 @RequestMapping("/api/appointments")
 @RequiredArgsConstructor
 public class AppointmentController {
-
     private final AppointmentService appointmentService;
 
     @PostMapping
-    public ResponseEntity<Appointment> createAppointmentRequest(@RequestBody AppointmentRequestDTO requestDTO) {
+    public ResponseEntity<Appointment> createAppointmentRequest(@Valid @RequestBody AppointmentRequestDTO requestDTO) {
         Appointment newAppointment = appointmentService.createAppointmentRequest(requestDTO);
         // Vraćamo 202 ACCEPTED jer zahtev nije odmah obrađen, već je primljen na obradu
         return new ResponseEntity<>(newAppointment, HttpStatus.ACCEPTED);

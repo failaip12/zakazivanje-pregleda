@@ -8,5 +8,4 @@ public class ZakazivanjePregledaApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ZakazivanjePregledaApplication.class, args);
 	}
-
 }
