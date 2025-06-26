@@ -4,6 +4,8 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.PatientDTO;
+import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
@@ -26,9 +28,10 @@ public class AppointmentService {
 
     @Transactional
     public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO) {
-        // TODO: Better error handling
         Doctor doctor = doctorRepository.findByFirstNameAndLastName(requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+                .orElseThrow(() -> new DoctorNotFoundException(
+                        String.format("Lekar sa imenom '%s %s' nije pronađen.", requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
+                ));
 
         Patient patient = patientRepository.findByJmbg(requestDTO.getPatientJmbg())
                 .orElseGet(() -> {
@@ -56,7 +59,7 @@ public class AppointmentService {
     public void processAppointment(Long appointmentId) {
         System.out.println("Processing appointment ID: " + appointmentId);
         Appointment appointment = appointmentRepository.findById(appointmentId)
-                .orElseThrow(() -> new RuntimeException("Appointment not found with ID: " + appointmentId));
+                .orElseThrow(() -> new AppointmentNotFoundException("Zahtev za termin sa ID: " + appointmentId + " nije pronađen."));
 
         Optional<Appointment> conflict = appointmentRepository.findByDoctorAndAppointmentTimeAndStatus(
                 appointment.getDoctor(),
