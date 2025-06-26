@@ -1,0 +1,22 @@
+meta {
+  name: Create appointment
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/appointments
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "patientFirstName": "Marko",
+    "patientLastName": "Marković",
+    "patientJmbg": "1234567890123",
+    "doctorFirstName": "Petar",
+    "doctorLastName": "Petrović",
+    "appointmentTime": "2024-10-28T10:00:00"
+  }
+}

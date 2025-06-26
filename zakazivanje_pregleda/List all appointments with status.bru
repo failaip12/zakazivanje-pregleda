@@ -1,0 +1,25 @@
+meta {
+  name: List all appointments with status
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8080/api/appointments?status=CONFIRMED
+  body: none
+  auth: none
+}
+
+params:query {
+  status: CONFIRMED
+}
+
+body:json {
+  {
+    "status": "CONFIRMED"
+  }
+}
+
+body:form-urlencoded {
+  status: CONFIRMED
+}

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "zakazivanje_pregleda",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
