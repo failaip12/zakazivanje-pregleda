@@ -11,6 +11,6 @@ public class RegisterRequestDTO {
 
     @NotBlank(message = "Ime mora biti definisano.")
     private String firstName;
-    @NotBlank(message = "Prezime mora biti definisan.")
+    @NotBlank(message = "Prezime mora biti definisano.")
     private String lastName;
 }
