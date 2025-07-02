@@ -6,6 +6,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.PatientDTO;
 import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.PatientNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
@@ -27,20 +28,14 @@ public class AppointmentService {
     private final AppointmentRequestProducer producer;
 
     @Transactional
-    public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO) {
+    public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO, Long patientId) {
         Doctor doctor = doctorRepository.findByFirstNameAndLastName(requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
                 .orElseThrow(() -> new DoctorNotFoundException(
                         String.format("Lekar sa imenom '%s %s' nije pronađen.", requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
                 ));
 
-        Patient patient = patientRepository.findByJmbg(requestDTO.getPatientJmbg())
-                .orElseGet(() -> {
-                    Patient newPatient = new Patient();
-                    newPatient.setFirstName(requestDTO.getPatientFirstName());
-                    newPatient.setLastName(requestDTO.getPatientLastName());
-                    newPatient.setJmbg(requestDTO.getPatientJmbg());
-                    return patientRepository.save(newPatient);
-                });
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new PatientNotFoundException("Pacijent sa ID: " + patientId + " nije pronađen."));
 
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);

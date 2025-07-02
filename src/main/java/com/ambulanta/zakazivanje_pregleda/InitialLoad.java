@@ -1,74 +1,90 @@
-package com.ambulanta.zakazivanje_pregleda.config;
+package com.ambulanta.zakazivanje_pregleda;
 
 import com.ambulanta.zakazivanje_pregleda.model.Doctor;
 import com.ambulanta.zakazivanje_pregleda.model.Patient;
-import com.ambulanta.zakazivanje_pregleda.repository.DoctorRepository;
-import com.ambulanta.zakazivanje_pregleda.repository.PatientRepository;
+import com.ambulanta.zakazivanje_pregleda.model.Role;
+import com.ambulanta.zakazivanje_pregleda.model.User;
+import com.ambulanta.zakazivanje_pregleda.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class InitialLoad implements CommandLineRunner {
 
-    private final DoctorRepository doctorRepository;
-    private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public InitialLoad(DoctorRepository doctorRepository, PatientRepository patientRepository) {
-        this.doctorRepository = doctorRepository;
-        this.patientRepository = patientRepository;
+    public InitialLoad(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        if (doctorRepository.count() == 0) {
+        if (userRepository.count() == 0) {
+            System.out.println("Učitavanje početnih podataka za korisnike...");
+            loadAdminData();
             loadDoctorData();
-        }
-        if (patientRepository.count() == 0) {
             loadPatientData();
+            System.out.println("Svi početni korisnici uspešno učitani.");
         }
     }
 
+    private void loadAdminData() {
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setRole(Role.ROLE_ADMIN);
+
+        userRepository.save(admin);
+        System.out.println("Admin korisnik kreiran. (Username: admin, Password: admin123)");
+    }
+
     private void loadDoctorData() {
-        System.out.println("Učitavanje početnih podataka za lekare...");
+        User doctorUser1 = new User();
+        doctorUser1.setUsername("1234567890123");
+        doctorUser1.setPassword(passwordEncoder.encode("doctor1pass"));
+        doctorUser1.setRole(Role.ROLE_DOCTOR);
 
         Doctor doctor1 = new Doctor();
         doctor1.setFirstName("Petar");
         doctor1.setLastName("Petrović");
         doctor1.setSpecialization("Opšta praksa");
+        doctorUser1.setDoctor(doctor1);
+
+        userRepository.save(doctorUser1);
+        System.out.println("Lekar Petar Petrović kreiran. (Username: 1234567890123, Password: doctor1pass)");
+
+        User doctorUser2 = new User();
+        doctorUser2.setUsername("2345678901234");
+        doctorUser2.setPassword(passwordEncoder.encode("doctor2pass"));
+        doctorUser2.setRole(Role.ROLE_DOCTOR);
 
         Doctor doctor2 = new Doctor();
         doctor2.setFirstName("Jovana");
         doctor2.setLastName("Jovanović");
         doctor2.setSpecialization("Kardiolog");
+        doctorUser2.setDoctor(doctor2);
 
-        Doctor doctor3 = new Doctor();
-        doctor3.setFirstName("Milan");
-        doctor3.setLastName("Milanović");
-        doctor3.setSpecialization("Pedijatar");
-
-        doctorRepository.save(doctor1);
-        doctorRepository.save(doctor2);
-        doctorRepository.save(doctor3);
-
-        System.out.println("Lekari uspešno učitani.");
+        userRepository.save(doctorUser2);
+        System.out.println("Lekar Jovana Jovanović kreirana. (Username: 2345678901234, Password: doctor2pass)");
     }
 
     private void loadPatientData() {
-        System.out.println("Učitavanje početnih podataka za pacijente...");
+        User patientUser1 = new User();
+        patientUser1.setUsername("1111111111111");
+        patientUser1.setPassword(passwordEncoder.encode("patient1pass"));
+        patientUser1.setRole(Role.ROLE_PATIENT);
 
         Patient patient1 = new Patient();
         patient1.setFirstName("Marko");
         patient1.setLastName("Marković");
         patient1.setJmbg("1111111111111");
 
-        Patient patient2 = new Patient();
-        patient2.setFirstName("Ana");
-        patient2.setLastName("Anić");
-        patient2.setJmbg("2222222222222");
+        patientUser1.setPatient(patient1);
 
-        patientRepository.save(patient1);
-        patientRepository.save(patient2);
-
-        System.out.println("Pacijenti uspešno učitani.");
+        userRepository.save(patientUser1);
+        System.out.println("Pacijent Marko Marković kreiran. (Username: 1111111111111, Password: patient1pass)");
     }
 }
