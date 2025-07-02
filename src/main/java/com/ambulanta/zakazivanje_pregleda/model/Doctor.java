@@ -1,5 +1,6 @@
 package com.ambulanta.zakazivanje_pregleda.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +14,10 @@ public class Doctor {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String firstName;
-    private String lastName;
+
+    @OneToOne(mappedBy = "doctor")
+    @JsonBackReference
+    private User user;
+
     private String specialization;
 }

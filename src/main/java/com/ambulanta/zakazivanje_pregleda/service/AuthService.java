@@ -22,11 +22,11 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
         user.setRole(Role.ROLE_PATIENT);
 
         Patient patient = new Patient();
-        patient.setFirstName(request.getFirstName());
-        patient.setLastName(request.getLastName());
         patient.setJmbg(request.getUsername());
         user.setPatient(patient);
 

@@ -43,48 +43,48 @@ public class InitialLoad implements CommandLineRunner {
 
     private void loadDoctorData() {
         User doctorUser1 = new User();
-        doctorUser1.setUsername("1234567890123");
+        doctorUser1.setUsername("PetPet");
         doctorUser1.setPassword(passwordEncoder.encode("doctor1pass"));
+        doctorUser1.setFirstName("Petar");
+        doctorUser1.setLastName("Petrović");
         doctorUser1.setRole(Role.ROLE_DOCTOR);
 
         Doctor doctor1 = new Doctor();
-        doctor1.setFirstName("Petar");
-        doctor1.setLastName("Petrović");
         doctor1.setSpecialization("Opšta praksa");
         doctorUser1.setDoctor(doctor1);
 
         userRepository.save(doctorUser1);
-        System.out.println("Lekar Petar Petrović kreiran. (Username: 1234567890123, Password: doctor1pass)");
+        System.out.println("Lekar Petar Petrović kreiran. (Username: PetPet, Password: doctor1pass)");
 
         User doctorUser2 = new User();
-        doctorUser2.setUsername("2345678901234");
+        doctorUser2.setUsername("JovJov");
         doctorUser2.setPassword(passwordEncoder.encode("doctor2pass"));
+        doctorUser2.setFirstName("Jovana");
+        doctorUser2.setLastName("Jovanović");
         doctorUser2.setRole(Role.ROLE_DOCTOR);
 
         Doctor doctor2 = new Doctor();
-        doctor2.setFirstName("Jovana");
-        doctor2.setLastName("Jovanović");
         doctor2.setSpecialization("Kardiolog");
         doctorUser2.setDoctor(doctor2);
 
         userRepository.save(doctorUser2);
-        System.out.println("Lekar Jovana Jovanović kreirana. (Username: 2345678901234, Password: doctor2pass)");
+        System.out.println("Lekar Jovana Jovanović kreirana. (Username: JovJov, Password: doctor2pass)");
     }
 
     private void loadPatientData() {
         User patientUser1 = new User();
-        patientUser1.setUsername("1111111111111");
+        patientUser1.setUsername("MarMar");
         patientUser1.setPassword(passwordEncoder.encode("patient1pass"));
+        patientUser1.setFirstName("Marko");
+        patientUser1.setLastName("Marković");
         patientUser1.setRole(Role.ROLE_PATIENT);
 
         Patient patient1 = new Patient();
-        patient1.setFirstName("Marko");
-        patient1.setLastName("Marković");
         patient1.setJmbg("1111111111111");
 
         patientUser1.setPatient(patient1);
 
         userRepository.save(patientUser1);
-        System.out.println("Pacijent Marko Marković kreiran. (Username: 1111111111111, Password: patient1pass)");
+        System.out.println("Pacijent Marko Marković kreiran. (Username: MarMar, Password: patient1pass)");
     }
 }

@@ -24,14 +24,15 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
+    private final UserRepository userRepository;
     private final DoctorRepository doctorRepository;
     private final AppointmentRequestProducer producer;
 
     @Transactional
     public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO, Long patientId) {
-        Doctor doctor = doctorRepository.findByFirstNameAndLastName(requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
+        Doctor doctor = doctorRepository.findById(requestDTO.getDoctorId())
                 .orElseThrow(() -> new DoctorNotFoundException(
-                        String.format("Lekar sa imenom '%s %s' nije pronađen.", requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName())
+                        "Lekar sa ID: " + requestDTO.getDoctorId() + " nije pronađen."
                 ));
 
         Patient patient = patientRepository.findById(patientId)
@@ -85,17 +86,21 @@ public class AppointmentService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
     private AppointmentResponseDTO convertToDto(Appointment appointment) {
+        User patientUser = appointment.getPatient().getUser();
+        User doctorUser = appointment.getDoctor().getUser();
+
         PatientDTO patientDTO = new PatientDTO();
         patientDTO.setId(appointment.getPatient().getId());
-        patientDTO.setFirstName(appointment.getPatient().getFirstName());
-        patientDTO.setLastName(appointment.getPatient().getLastName());
+        patientDTO.setFirstName(patientUser.getFirstName());
+        patientDTO.setLastName(patientUser.getLastName());
 
         DoctorDTO doctorDTO = new DoctorDTO();
         doctorDTO.setId(appointment.getDoctor().getId());
-        doctorDTO.setFirstName(appointment.getDoctor().getFirstName());
-        doctorDTO.setLastName(appointment.getDoctor().getLastName());
         doctorDTO.setSpecialization(appointment.getDoctor().getSpecialization());
+        doctorDTO.setFirstName(doctorUser.getFirstName());
+        doctorDTO.setLastName(doctorUser.getLastName());
 
         AppointmentResponseDTO dto = new AppointmentResponseDTO();
         dto.setId(appointment.getId());

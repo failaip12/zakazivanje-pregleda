@@ -1,7 +1,6 @@
 package com.ambulanta.zakazivanje_pregleda.dto;
 
 import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -10,11 +9,8 @@ import java.time.LocalDateTime;
 @Data
 public class AppointmentRequestDTO {
 
-    @NotBlank(message = "Ime lekara ne sme biti prazno.")
-    private String doctorFirstName;
-
-    @NotBlank(message = "Prezime lekara ne sme biti prazno.")
-    private String doctorLastName;
+    @NotNull(message = "Id lekara ne sme biti prazan.")
+    private Long doctorId;
 
 
     @NotNull(message = "Vreme pregleda mora biti definisano.")
