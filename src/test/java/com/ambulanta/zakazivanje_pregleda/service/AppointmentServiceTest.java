@@ -4,6 +4,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.InvalidAppointmentTimeException;
 import com.ambulanta.zakazivanje_pregleda.exception.UserNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
@@ -17,10 +18,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -50,7 +53,7 @@ class AppointmentServiceTest {
     void setUp() {
         requestDTO = new AppointmentRequestDTO();
         requestDTO.setDoctorId(1L);
-        requestDTO.setAppointmentTime(LocalDateTime.now().plusDays(1));
+        requestDTO.setAppointmentTime(LocalDateTime.now().plusDays(1).with(LocalTime.of(11, 45)));
 
         patient = new Patient();
         patient.setId(1L);
@@ -99,47 +102,6 @@ class AppointmentServiceTest {
         assertThat(result.getId()).isEqualTo(1L);
 
         verify(producer, times(1)).send(1L);
-    }
-    @Test
-    void whenProcessAppointment_andTerminIsTaken_shouldRejectAppointment() {
-        Long appointmentId = 1L;
-        LocalDateTime conflictingTime = LocalDateTime.now().plusDays(2);
-
-        Appointment pendingAppointment = new Appointment(
-                appointmentId,
-                patient,
-                doctor,
-                conflictingTime,
-                AppointmentStatus.PENDING
-        );
-
-        Appointment conflictingAppointment = new Appointment(
-                appointmentId+1,
-                new Patient(),
-                doctor,
-                conflictingTime,
-                AppointmentStatus.CONFIRMED
-        );
-
-        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(pendingAppointment));
-
-        when(appointmentRepository.findByDoctorAndAppointmentTimeAndStatus(
-                doctor,
-                conflictingTime,
-                AppointmentStatus.CONFIRMED
-        )).thenReturn(Optional.of(conflictingAppointment));
-
-        appointmentService.processAppointment(appointmentId);
-
-        ArgumentCaptor<Appointment> appointmentCaptor = ArgumentCaptor.forClass(Appointment.class);
-
-        verify(appointmentRepository, times(1)).save(appointmentCaptor.capture());
-
-        Appointment savedAppointment = appointmentCaptor.getValue();
-
-        assertThat(savedAppointment.getStatus()).isEqualTo(AppointmentStatus.REJECTED);
-
-        assertThat(savedAppointment.getId()).isEqualTo(appointmentId);
     }
 
     @Test
@@ -196,6 +158,115 @@ class AppointmentServiceTest {
         verify(appointmentRepository).findByStatus(AppointmentStatus.CONFIRMED);
         verify(appointmentRepository, never()).findAll();
     }
+    @Test
+    void whenCreateAppointment_withTimeOutsideWorkingHours_shouldThrowInvalidAppointmentTimeException() {
+        requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 8, 0));
+
+        // WHEN & THEN
+        InvalidAppointmentTimeException thrown = assertThrows(
+                InvalidAppointmentTimeException.class,
+                () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")
+        );
+        assertThat(thrown.getMessage()).contains("Zakazivanje je moguće samo u toku radnog vremena");
+    }
+
+    @Test
+    void whenCreateAppointment_withTimeAtEndOfWorkingHours_shouldThrowInvalidAppointmentTimeException() {
+        requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 17, 0));
+
+        // WHEN & THEN
+        InvalidAppointmentTimeException thrown = assertThrows(
+                InvalidAppointmentTimeException.class,
+                () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")
+        );
+        assertThat(thrown.getMessage()).contains("Zakazivanje je moguće samo u toku radnog vremena");
+    }
+
+    @Test
+    void whenCreateAppointment_withInvalidMinuteInterval_shouldThrowInvalidAppointmentTimeException() {
+        requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 9, 5));
+
+        InvalidAppointmentTimeException thrown = assertThrows(
+                InvalidAppointmentTimeException.class,
+                () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")
+        );
+        assertThat(thrown.getMessage()).contains("Zakazivanje je moguće samo u intervalima od 15 minuta");
+    }
+
+    @Test
+    void whenCreateAppointment_withSecondsSet_shouldThrowInvalidAppointmentTimeException() {
+        requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 9, 15, 30));
+
+        InvalidAppointmentTimeException thrown = assertThrows(
+                InvalidAppointmentTimeException.class,
+                () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")
+        );
+        assertThat(thrown.getMessage()).contains("ne sme sadržati sekunde");
+    }
+
+    @Test
+    void whenCreateAppointment_withValidTime_shouldProceedWithoutException() {
+        requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 16, 45));
+
+        when(doctorRepository.findById(anyLong())).thenReturn(Optional.of(doctor));
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(patientUser));
+        when(appointmentRepository.save(any(Appointment.class))).thenReturn(new Appointment());
+
+        assertDoesNotThrow(() -> {
+            appointmentService.createAppointmentRequest(requestDTO, "1111111111111");
+        });
+
+        verify(appointmentRepository).save(any(Appointment.class));
+    }
+    @Test
+    void whenProcessAppointment_andNoConflictingAppointmentsExist_shouldConfirmAppointment() {
+        LocalDateTime appointmentTime = LocalDateTime.of(2025, 5, 20, 10, 0);
+        Appointment appointmentToProcess = new Appointment(1L, patient, doctor, appointmentTime, AppointmentStatus.PENDING);
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
+
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of());
+
+        appointmentService.processAppointment(1L);
+
+        ArgumentCaptor<Appointment> captor = ArgumentCaptor.forClass(Appointment.class);
+        verify(appointmentRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
+    }
+
+    @Test
+    void whenProcessAppointment_andConflictingAppointmentExists_shouldRejectAppointment() {
+        LocalDateTime newAppointmentTime = LocalDateTime.of(2025, 5, 20, 10, 15);
+        Appointment appointmentToProcess = new Appointment(1L, patient, doctor, newAppointmentTime, AppointmentStatus.PENDING);
+
+        Appointment existingAppointment = new Appointment(2L, new Patient(), doctor, LocalDateTime.of(2025, 5, 20, 10, 0), AppointmentStatus.CONFIRMED);
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
+
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of(existingAppointment));
+
+        appointmentService.processAppointment(1L);
+
+        ArgumentCaptor<Appointment> captor = ArgumentCaptor.forClass(Appointment.class);
+        verify(appointmentRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(AppointmentStatus.REJECTED);
+    }
+
+    @Test
+    void whenProcessAppointment_withSameStartTime_shouldRejectAppointment() {
+        LocalDateTime appointmentTime = LocalDateTime.of(2025, 5, 20, 11, 0);
+        Appointment appointmentToProcess = new Appointment(1L, patient, doctor, appointmentTime, AppointmentStatus.PENDING);
+        Appointment existingAppointment = new Appointment(2L, new Patient(), doctor, appointmentTime, AppointmentStatus.CONFIRMED);
+
+        when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of(existingAppointment));
+
+        appointmentService.processAppointment(1L);
+
+        ArgumentCaptor<Appointment> captor = ArgumentCaptor.forClass(Appointment.class);
+        verify(appointmentRepository).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(AppointmentStatus.REJECTED);
+    }
 
     @Test
     void whenProcessAppointment_withNonExistentAppointmentId_shouldThrowException() {
@@ -245,39 +316,6 @@ class AppointmentServiceTest {
         assertThat(dto.getPatient().getFirstName()).isEqualTo("Marko");
         assertThat(dto.getDoctor().getFirstName()).isEqualTo("Petar");
         assertThat(dto.getDoctor().getSpecialization()).isEqualTo("Opšta praksa");
-    }
-    @Test
-    void whenProcessAppointment_andTerminIsFree_shouldConfirmAppointment() {
-        Long appointmentId = 1L;
-
-        Appointment pendingAppointment = new Appointment(
-                appointmentId,
-                patient,
-                doctor,
-                LocalDateTime.now().plusDays(1),
-                AppointmentStatus.PENDING
-        );
-
-        when(appointmentRepository.findById(appointmentId)).thenReturn(Optional.of(pendingAppointment));
-
-        when(appointmentRepository.findByDoctorAndAppointmentTimeAndStatus(
-                doctor,
-                pendingAppointment.getAppointmentTime(),
-                AppointmentStatus.CONFIRMED
-        )).thenReturn(Optional.empty());
-
-        appointmentService.processAppointment(appointmentId);
-
-        ArgumentCaptor<Appointment> appointmentCaptor = ArgumentCaptor.forClass(Appointment.class);
-
-        verify(appointmentRepository, times(1)).save(appointmentCaptor.capture());
-
-        Appointment savedAppointment = appointmentCaptor.getValue();
-
-        assertThat(savedAppointment.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
-
-        assertThat(savedAppointment.getId()).isEqualTo(appointmentId);
-        assertThat(savedAppointment.getDoctor()).isEqualTo(doctor);
     }
     @Test
     void whenCreateAppointment_withNonExistentDoctor_shouldThrowDoctorNotFoundException() {
