@@ -1,10 +1,12 @@
 package com.ambulanta.zakazivanje_pregleda.controller;
 
 import com.ambulanta.zakazivanje_pregleda.config.SecurityConfig;
+import com.ambulanta.zakazivanje_pregleda.dto.AddDoctorRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
 import com.ambulanta.zakazivanje_pregleda.security.JwtAuthFilter;
 import com.ambulanta.zakazivanje_pregleda.security.JwtService;
 import com.ambulanta.zakazivanje_pregleda.service.DoctorService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,8 +21,11 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,6 +35,8 @@ class DoctorControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private DoctorService doctorService;
@@ -76,5 +83,62 @@ class DoctorControllerTest {
 
         mockMvc.perform(get("/api/doctors"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void whenAddNewDoctor_asAdmin_withValidData_shouldReturnCreated() throws Exception {
+        AddDoctorRequestDTO request = new AddDoctorRequestDTO();
+        request.setFirstName("Novi");
+        request.setLastName("Doktor");
+        request.setUsername("9876543210987");
+        request.setPassword("sigurnaLozinka");
+        request.setSpecialization("Hirurg");
+
+        DoctorDTO createdDoctorDto = new DoctorDTO(5L, "Novi", "Doktor", "Hirurg");
+        given(doctorService.addDoctor(any(AddDoctorRequestDTO.class))).willReturn(createdDoctorDto);
+
+        mockMvc.perform(post("/api/doctors")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(5)))
+                .andExpect(jsonPath("$.firstName", is("Novi")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void whenAddNewDoctor_asPatient_shouldReturnForbidden() throws Exception {
+        AddDoctorRequestDTO request = new AddDoctorRequestDTO();
+        request.setFirstName("Novi");
+        request.setLastName("Doktor");
+        request.setUsername("9876543210987");
+        request.setPassword("sigurnaLozinka");
+        request.setSpecialization("Hirurg");
+
+        mockMvc.perform(post("/api/doctors")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void whenAddNewDoctor_withInvalidData_shouldReturnBadRequest() throws Exception {
+        AddDoctorRequestDTO request = new AddDoctorRequestDTO();
+        request.setFirstName("Novi");
+        request.setLastName("Doktor");
+        request.setUsername("123");
+        request.setPassword("lozinka");
+        request.setSpecialization("Hirurg");
+
+        mockMvc.perform(post("/api/doctors")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.username", is("JMBG mora sadržati tačno 13 cifara.")));
     }
 }
