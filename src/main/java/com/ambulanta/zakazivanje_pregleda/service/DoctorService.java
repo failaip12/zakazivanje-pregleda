@@ -27,7 +27,7 @@ public class DoctorService {
     private DoctorDTO convertToDto(Doctor doctor) {
         User doctorUser = doctor.getUser();
         if (doctorUser == null) {
-            return new DoctorDTO(doctor.getId(), "N/A", "N/A", doctor.getSpecialization());
+            throw new IllegalStateException("Doktor ID: " + doctor.getId() + " nema povezane korisnicke podatke.");
         }
 
         return new DoctorDTO(
