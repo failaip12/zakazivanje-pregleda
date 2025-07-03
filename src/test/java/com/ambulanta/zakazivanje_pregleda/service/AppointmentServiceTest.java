@@ -4,6 +4,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.UserNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
@@ -149,6 +150,53 @@ class AppointmentServiceTest {
             appointmentService.getAppointmentsForUser(nonExistentUsername, null);
         });
     }
+
+    @Test
+    void whenGetAppointmentsForUser_forPatientUserWithoutPatientEntity_shouldThrowIllegalStateException() {
+        String username = "patient.bez.entiteta";
+        User patientWithoutEntity = new User();
+        patientWithoutEntity.setRole(Role.ROLE_PATIENT);
+        patientWithoutEntity.setPatient(null);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(patientWithoutEntity));
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> {
+            appointmentService.getAppointmentsForUser(username, null);
+        });
+
+        assertThat(thrown.getMessage()).isEqualTo("Korisnik sa ulogom pacijenta nema povezane podatke o pacijentu.");
+    }
+
+    @Test
+    void whenGetAppointmentsForUser_forDoctorUserWithoutDoctorEntity_shouldThrowIllegalStateException() {
+        String username = "doctor.bez.entiteta";
+        User doctorWithoutEntity = new User();
+        doctorWithoutEntity.setRole(Role.ROLE_DOCTOR);
+        doctorWithoutEntity.setDoctor(null);
+
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(doctorWithoutEntity));
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> {
+            appointmentService.getAppointmentsForUser(username, null);
+        });
+
+        assertThat(thrown.getMessage()).isEqualTo("Korisnik sa ulogom doktora nema povezane podatke o doktoru.");
+    }
+
+    @Test
+    void whenGetAppointmentsForUser_asAdminWithStatus_shouldCallFindByStatus() {
+        String adminUsername = "admin";
+        User adminUser = new User();
+        adminUser.setRole(Role.ROLE_ADMIN);
+
+        when(userRepository.findByUsername(adminUsername)).thenReturn(Optional.of(adminUser));
+
+        appointmentService.getAppointmentsForUser(adminUsername, AppointmentStatus.CONFIRMED);
+
+        verify(appointmentRepository).findByStatus(AppointmentStatus.CONFIRMED);
+        verify(appointmentRepository, never()).findAll();
+    }
+
     @Test
     void whenProcessAppointment_withNonExistentAppointmentId_shouldThrowException() {
         Long nonExistentId = 999L;
