@@ -4,10 +4,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.PatientDTO;
-import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
-import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
-import com.ambulanta.zakazivanje_pregleda.exception.PatientNotFoundException;
-import com.ambulanta.zakazivanje_pregleda.exception.UserNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.*;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
@@ -15,6 +12,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,8 +27,14 @@ public class AppointmentService {
     private final DoctorRepository doctorRepository;
     private final AppointmentRequestProducer producer;
 
+    private static final int APPOINTMENT_DURATION_MINUTES = 15;
+    private static final int WORK_HOUR_START = 9;
+    private static final int WORK_HOUR_END = 17;
+
     @Transactional
     public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO, String username) {
+        validateAppointmentTime(requestDTO.getAppointmentTime());
+
         Doctor doctor = doctorRepository.findById(requestDTO.getDoctorId())
                 .orElseThrow(() -> new DoctorNotFoundException(
                         "Lekar sa ID: " + requestDTO.getDoctorId() + " nije pronađen."
@@ -124,13 +128,19 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new AppointmentNotFoundException("Zahtev za termin sa ID: " + appointmentId + " nije pronađen."));
 
-        Optional<Appointment> conflict = appointmentRepository.findByDoctorAndAppointmentTimeAndStatus(
+        LocalDateTime newAppointmentTime = appointment.getAppointmentTime();
+
+        LocalDateTime lowerBound = newAppointmentTime.minusMinutes(APPOINTMENT_DURATION_MINUTES);
+        LocalDateTime upperBound = newAppointmentTime.plusMinutes(APPOINTMENT_DURATION_MINUTES);
+
+        List<Appointment> conflictingAppointments = appointmentRepository.findConflictingAppointments(
                 appointment.getDoctor(),
-                appointment.getAppointmentTime(),
-                AppointmentStatus.CONFIRMED
+                newAppointmentTime,
+                lowerBound,
+                upperBound
         );
 
-        if (conflict.isPresent()) {
+        if (!conflictingAppointments.isEmpty()) {
             appointment.setStatus(AppointmentStatus.REJECTED);
             System.out.println("Appointment " + appointmentId + " REJECTED due to conflict.");
         } else {
@@ -177,5 +187,25 @@ public class AppointmentService {
         dto.setDoctor(doctorDTO);
 
         return dto;
+    }
+
+    private void validateAppointmentTime(LocalDateTime appointmentTime) {
+        int hour = appointmentTime.getHour();
+        if (hour < WORK_HOUR_START || hour >= WORK_HOUR_END) {
+            throw new InvalidAppointmentTimeException(
+                    "Zakazivanje je moguće samo u toku radnog vremena (od " + WORK_HOUR_START + ":00 do " + WORK_HOUR_END + ":00)."
+            );
+        }
+
+        int minute = appointmentTime.getMinute();
+        if (minute % APPOINTMENT_DURATION_MINUTES != 0) {
+            throw new InvalidAppointmentTimeException(
+                    "Zakazivanje je moguće samo u intervalima od " + APPOINTMENT_DURATION_MINUTES + " minuta (npr. 9:00, 9:15, 9:30...)."
+            );
+        }
+
+        if (appointmentTime.getSecond() != 0 || appointmentTime.getNano() != 0) {
+            throw new InvalidAppointmentTimeException("Vreme zakazivanja ne sme sadržati sekunde ili milisekunde.");
+        }
     }
 }
