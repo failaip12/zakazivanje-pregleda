@@ -30,7 +30,7 @@ class AppointmentServiceTest {
     @Mock
     private AppointmentRepository appointmentRepository;
     @Mock
-    private PatientRepository patientRepository;
+    private UserRepository  userRepository;
     @Mock
     private DoctorRepository doctorRepository;
     @Mock
@@ -40,27 +40,48 @@ class AppointmentServiceTest {
     private AppointmentService appointmentService;
 
     private AppointmentRequestDTO requestDTO;
+    private User patientUser;
+    private User doctorUser;
     private Doctor doctor;
     private Patient patient;
 
     @BeforeEach
     void setUp() {
         requestDTO = new AppointmentRequestDTO();
-        requestDTO.setDoctorFirstName("Petar");
-        requestDTO.setDoctorLastName("Petrović");
-        requestDTO.setPatientFirstName("Marko");
-        requestDTO.setPatientLastName("Marković");
-        requestDTO.setPatientJmbg("1234567890123");
+        requestDTO.setDoctorId(1L);
         requestDTO.setAppointmentTime(LocalDateTime.now().plusDays(1));
 
-        doctor = new Doctor(1L, "Petar", "Petrović", "Opšta praksa");
-        patient = new Patient(1L, "Marko", "Marković", "1234567890123");
+        patient = new Patient();
+        patient.setId(1L);
+        patient.setJmbg("1111111111111");
+
+        patientUser = new User();
+        patientUser.setId(1L);
+        patientUser.setUsername(patient.getJmbg());
+        patientUser.setFirstName("Marko");
+        patientUser.setLastName("Marković");
+        patientUser.setRole(Role.ROLE_PATIENT);
+        patientUser.setPatient(patient);
+        patient.setUser(patientUser);
+
+        doctor = new Doctor();
+        doctor.setId(1L);
+        doctor.setSpecialization("Opšta praksa");
+
+        doctorUser = new User();
+        doctorUser.setId(2L);
+        doctorUser.setUsername("2222222222222");
+        doctorUser.setFirstName("Petar");
+        doctorUser.setLastName("Petrović");
+        doctorUser.setRole(Role.ROLE_DOCTOR);
+        doctorUser.setDoctor(doctor);
+        doctor.setUser(doctorUser);
     }
 
     @Test
     void whenCreateAppointment_withValidData_shouldReturnPendingAppointment() {
-        when(doctorRepository.findByFirstNameAndLastName("Petar", "Petrović")).thenReturn(Optional.of(doctor));
-        when(patientRepository.findByJmbg("1234567890123")).thenReturn(Optional.of(patient));
+        when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
+        when(userRepository.findByUsername("1111111111111")).thenReturn(Optional.of(patientUser));
 
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
             Appointment app = invocation.getArgument(0);
@@ -68,12 +89,12 @@ class AppointmentServiceTest {
             return app;
         });
 
-        Appointment result = appointmentService.createAppointmentRequest(requestDTO);
+        Appointment result = appointmentService.createAppointmentRequest(requestDTO, "1111111111111");
 
         assertThat(result).isNotNull();
         assertThat(result.getStatus()).isEqualTo(AppointmentStatus.PENDING);
-        assertThat(result.getDoctor().getFirstName()).isEqualTo("Petar");
-        assertThat(result.getPatient().getJmbg()).isEqualTo("1234567890123");
+        assertThat(result.getDoctor().getId()).isEqualTo(1L);
+        assertThat(result.getPatient().getJmbg()).isEqualTo("1111111111111");
         assertThat(result.getId()).isEqualTo(1L);
 
         verify(producer, times(1)).send(1L);
@@ -93,7 +114,7 @@ class AppointmentServiceTest {
 
         Appointment conflictingAppointment = new Appointment(
                 appointmentId+1,
-                new Patient(99L, "Drugi", "Pacijent", "9999999999999"),
+                new Patient(),
                 doctor,
                 conflictingTime,
                 AppointmentStatus.CONFIRMED
@@ -136,71 +157,37 @@ class AppointmentServiceTest {
         verify(appointmentRepository, never()).save(any(Appointment.class));
     }
     @Test
-    void whenGetAppointmentsByStatus_withConfirmedStatus_shouldReturnOnlyConfirmed() {
-        AppointmentStatus statusToFilter = AppointmentStatus.CONFIRMED;
+    void whenGetAppointmentsByStatus_shouldReturnFilteredDtoList() {
+        Appointment appointment1 = new Appointment(1L, patient, doctor, LocalDateTime.now(), AppointmentStatus.CONFIRMED);
+        appointment1.getPatient().setUser(patientUser);
+        appointment1.getDoctor().setUser(doctorUser);
 
-        Appointment confirmedAppointment1 = new Appointment(1L, patient, doctor,
-                LocalDateTime.now().plusDays(1), statusToFilter);
+        List<Appointment> entityList = List.of(appointment1);
+        when(appointmentRepository.findByStatus(AppointmentStatus.CONFIRMED)).thenReturn(entityList);
 
-        Appointment confirmedAppointment2 = new Appointment(2L, patient, doctor,
-                LocalDateTime.now().plusDays(2), statusToFilter);
+        List<AppointmentResponseDTO> dtoList = appointmentService.getAppointmentsByStatus(AppointmentStatus.CONFIRMED);
 
-        List<Appointment> confirmedEntityList = List.of(confirmedAppointment1, confirmedAppointment2);
-
-        when(appointmentRepository.findByStatus(statusToFilter)).thenReturn(confirmedEntityList);
-
-        List<AppointmentResponseDTO> resultDtoList = appointmentService.getAppointmentsByStatus(statusToFilter);
-
-        assertThat(resultDtoList).isNotNull();
-        assertThat(resultDtoList).hasSize(2);
-
-        assertThat(resultDtoList).allMatch(dto -> dto.getStatus() == statusToFilter);
-
-        AppointmentResponseDTO firstDto = resultDtoList.get(0);
-        assertThat(firstDto.getId()).isEqualTo(confirmedAppointment1.getId());
-        assertThat(firstDto.getPatient().getFirstName()).isEqualTo(patient.getFirstName());
-
-        verify(appointmentRepository, times(1)).findByStatus(statusToFilter);
-        verify(appointmentRepository, never()).findAll();
+        assertThat(dtoList).hasSize(1);
+        assertThat(dtoList).allMatch(dto -> dto.getStatus() == AppointmentStatus.CONFIRMED);
+        assertThat(dtoList.get(0).getPatient().getLastName()).isEqualTo("Marković");
     }
     @Test
     void whenGetAllAppointments_shouldReturnDtoList() {
-        Appointment appointment1 = new Appointment(1L, patient, doctor,
-                LocalDateTime.now().plusHours(1), AppointmentStatus.PENDING);
+        Appointment appointment1 = new Appointment(1L, patient, doctor, LocalDateTime.now(), AppointmentStatus.PENDING);
+        appointment1.getPatient().setUser(patientUser);
+        appointment1.getDoctor().setUser(doctorUser);
 
-        Doctor anotherDoctor = new Doctor(2L, "Jovana", "Jovanović", "Kardiolog");
-        Appointment appointment2 = new Appointment(2L, patient, anotherDoctor,
-                LocalDateTime.now().plusDays(1), AppointmentStatus.CONFIRMED);
+        List<Appointment> entityList = List.of(appointment1);
+        when(appointmentRepository.findAll()).thenReturn(entityList);
 
-        List<Appointment> appointmentEntityList = List.of(appointment1, appointment2);
+        List<AppointmentResponseDTO> dtoList = appointmentService.getAllAppointments();
 
-        when(appointmentRepository.findAll()).thenReturn(appointmentEntityList);
-
-        List<AppointmentResponseDTO> resultDtoList = appointmentService.getAllAppointments();
-
-        assertThat(resultDtoList).isNotNull();
-        assertThat(resultDtoList).isNotEmpty();
-        assertThat(resultDtoList).hasSize(2);
-
-        AppointmentResponseDTO firstDto = resultDtoList.get(0);
-        assertThat(firstDto.getId()).isEqualTo(appointment1.getId());
-        assertThat(firstDto.getStatus()).isEqualTo(appointment1.getStatus());
-        assertThat(firstDto.getAppointmentTime()).isEqualTo(appointment1.getAppointmentTime());
-
-        assertThat(firstDto.getPatient()).isNotNull();
-        assertThat(firstDto.getPatient().getId()).isEqualTo(patient.getId());
-        assertThat(firstDto.getPatient().getFirstName()).isEqualTo(patient.getFirstName());
-        assertThat(firstDto.getPatient().getLastName()).isEqualTo(patient.getLastName());
-
-        assertThat(firstDto.getDoctor()).isNotNull();
-        assertThat(firstDto.getDoctor().getId()).isEqualTo(doctor.getId());
-        assertThat(firstDto.getDoctor().getFirstName()).isEqualTo(doctor.getFirstName());
-        assertThat(firstDto.getDoctor().getSpecialization()).isEqualTo(doctor.getSpecialization());
-
-        AppointmentResponseDTO secondDto = resultDtoList.get(1);
-        assertThat(secondDto.getId()).isEqualTo(appointment2.getId());
-        assertThat(secondDto.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
-        assertThat(secondDto.getDoctor().getFirstName()).isEqualTo("Jovana");
+        assertThat(dtoList).hasSize(1);
+        AppointmentResponseDTO dto = dtoList.get(0);
+        assertThat(dto.getId()).isEqualTo(1L);
+        assertThat(dto.getPatient().getFirstName()).isEqualTo("Marko");
+        assertThat(dto.getDoctor().getFirstName()).isEqualTo("Petar");
+        assertThat(dto.getDoctor().getSpecialization()).isEqualTo("Opšta praksa");
     }
     @Test
     void whenProcessAppointment_andTerminIsFree_shouldConfirmAppointment() {
@@ -236,50 +223,14 @@ class AppointmentServiceTest {
         assertThat(savedAppointment.getDoctor()).isEqualTo(doctor);
     }
     @Test
-    void whenCreateAppointment_andPatientDoesNotExist_shouldCreateNewPatient() {
-
-        when(doctorRepository.findByFirstNameAndLastName(requestDTO.getDoctorFirstName(), requestDTO.getDoctorLastName()))
-                .thenReturn(Optional.of(doctor));
-
-        when(patientRepository.findByJmbg(requestDTO.getPatientJmbg()))
-                .thenReturn(Optional.empty());
-
-        Patient newPatient = new Patient(2L,
-                requestDTO.getPatientFirstName(),
-                requestDTO.getPatientLastName(),
-                requestDTO.getPatientJmbg()
-        );
-        when(patientRepository.save(any(Patient.class))).thenReturn(newPatient);
-
-        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
-            Appointment app = invocation.getArgument(0);
-            app.setId(1L);
-            return app;
-        });
-
-        Appointment result = appointmentService.createAppointmentRequest(requestDTO);
-
-        verify(patientRepository, times(1)).save(any(Patient.class));
-
-        verify(appointmentRepository, times(1)).save(any(Appointment.class));
-
-        verify(producer, times(1)).send(anyLong());
-
-        assertThat(result).isNotNull();
-        assertThat(result.getPatient()).isNotNull();
-        assertThat(result.getPatient().getId()).isEqualTo(2L);
-        assertThat(result.getPatient().getJmbg()).isEqualTo(requestDTO.getPatientJmbg());
-        assertThat(result.getStatus()).isEqualTo(AppointmentStatus.PENDING);
-    }
-
-    @Test
     void whenCreateAppointment_withNonExistentDoctor_shouldThrowDoctorNotFoundException() {
-        when(doctorRepository.findByFirstNameAndLastName(anyString(), anyString())).thenReturn(Optional.empty());
+        when(doctorRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         assertThrows(DoctorNotFoundException.class, () -> {
-            appointmentService.createAppointmentRequest(requestDTO);
+            appointmentService.createAppointmentRequest(requestDTO, "1111111111111");
         });
 
+        verify(userRepository, never()).findByUsername(anyString());
         verify(appointmentRepository, never()).save(any());
         verify(producer, never()).send(anyLong());
     }

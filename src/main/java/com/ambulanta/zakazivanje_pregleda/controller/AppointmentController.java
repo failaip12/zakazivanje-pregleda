@@ -23,9 +23,9 @@ public class AppointmentController {
 
     @PostMapping
     public ResponseEntity<Appointment> createAppointmentRequest(@Valid @RequestBody AppointmentRequestDTO requestDTO, Authentication authentication) {
-        User currentUser = (User) authentication.getPrincipal();
-        Appointment newAppointment = appointmentService.createAppointmentRequest(requestDTO, currentUser.getPatient().getId());
-        // Vraćamo 202 ACCEPTED jer zahtev nije odmah obrađen, već je primljen na obradu
+        String username = authentication.getName();
+
+        Appointment newAppointment = appointmentService.createAppointmentRequest(requestDTO, username);
         return new ResponseEntity<>(newAppointment, HttpStatus.ACCEPTED);
     }
 

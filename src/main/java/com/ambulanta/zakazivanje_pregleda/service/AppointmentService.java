@@ -29,15 +29,19 @@ public class AppointmentService {
     private final AppointmentRequestProducer producer;
 
     @Transactional
-    public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO, Long patientId) {
+    public Appointment createAppointmentRequest(AppointmentRequestDTO requestDTO, String username) {
         Doctor doctor = doctorRepository.findById(requestDTO.getDoctorId())
                 .orElseThrow(() -> new DoctorNotFoundException(
                         "Lekar sa ID: " + requestDTO.getDoctorId() + " nije pronađen."
                 ));
 
-        Patient patient = patientRepository.findById(patientId)
-                .orElseThrow(() -> new PatientNotFoundException("Pacijent sa ID: " + patientId + " nije pronađen."));
+        User patientUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new PatientNotFoundException("Pacijent sa korisničkim imenom: " + username + " nije pronađen."));
 
+        Patient patient = patientUser.getPatient();
+        if (patient == null) {
+            throw new IllegalStateException("Korisnik sa ulogom pacijenta nema povezane podatke o pacijentu.");
+        }
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
