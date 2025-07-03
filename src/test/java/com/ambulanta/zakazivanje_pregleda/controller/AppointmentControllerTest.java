@@ -155,7 +155,11 @@ class AppointmentControllerTest {
 
         verify(appointmentService, never()).getAllAppointments();
     }
-
+    @Test
+    void whenGetAppointments_withoutAuthentication_shouldReturnUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/appointments"))
+                .andExpect(status().isUnauthorized());
+    }
     @Test
     @WithMockUser(roles = "DOCTOR")
     void whenGetAllAppointments_withInvalidStatusFilter_shouldReturnBadRequest() throws Exception {
