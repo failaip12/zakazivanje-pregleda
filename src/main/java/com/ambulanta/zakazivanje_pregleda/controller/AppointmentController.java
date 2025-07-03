@@ -4,7 +4,6 @@ import com.ambulanta.zakazivanje_pregleda.dto.AppointmentRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.model.Appointment;
 import com.ambulanta.zakazivanje_pregleda.model.AppointmentStatus;
-import com.ambulanta.zakazivanje_pregleda.model.User;
 import com.ambulanta.zakazivanje_pregleda.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +29,14 @@ public class AppointmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AppointmentResponseDTO>> getAllAppointments(@RequestParam(required = false) AppointmentStatus status) {
+    public ResponseEntity<List<AppointmentResponseDTO>> getAppointments(
+            @RequestParam(required = false) AppointmentStatus status,
+            Authentication authentication) {
+        String username = authentication.getName();
+
         List<AppointmentResponseDTO> appointments;
-        if (status != null) {
-            appointments = appointmentService.getAppointmentsByStatus(status);
-        } else {
-            appointments = appointmentService.getAllAppointments();
-        }
+        appointments = appointmentService.getAppointmentsForUser(username, status);
+
         return ResponseEntity.ok(appointments);
     }
 }

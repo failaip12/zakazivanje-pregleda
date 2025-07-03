@@ -54,7 +54,69 @@ public class AppointmentService {
 
         return savedAppointment;
     }
+    @Transactional
+    public List<AppointmentResponseDTO> getAppointmentsForDoctor(Long doctorId, AppointmentStatus status) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new DoctorNotFoundException("Doktor sa ID: " + doctorId + " nije pronađen."));
 
+        List<Appointment> appointments;
+        if (status != null) {
+            appointments = appointmentRepository.findByDoctorAndStatus(doctor, status);
+        } else {
+            appointments = appointmentRepository.findByDoctor(doctor);
+        }
+
+        return appointments.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    @Transactional
+    public List<AppointmentResponseDTO> getAppointmentsForUser(String username, AppointmentStatus status) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new DoctorNotFoundException("Korisnik sa username: " + username + " nije pronađen."));
+        Role role = user.getRole();
+        switch (role) {
+            case ROLE_DOCTOR -> {
+                if (user.getDoctor() == null) {
+                    throw new IllegalStateException("Korisnik sa ulogom doktora nema povezane podatke o doktoru.");
+                }
+
+                return getAppointmentsForDoctor(user.getDoctor().getId(), status);
+            }
+            case ROLE_PATIENT -> {
+                if (user.getPatient() == null) {
+                    throw new IllegalStateException("Korisnik sa ulogom pacijenta nema povezane podatke o pacijentu.");
+                }
+
+                return getAppointmentsForPatient(user.getPatient().getId(), status);
+            }
+            case ROLE_ADMIN -> {
+                if (status != null) {
+                    return getAppointmentsByStatus(status);
+                } else {
+                    return getAllAppointments();
+                }
+            }
+
+            default -> throw new EnumConstantNotPresentException(Role.class, role.name());
+        }
+    }
+    @Transactional
+    public List<AppointmentResponseDTO> getAppointmentsForPatient(Long patientId, AppointmentStatus status) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new PatientNotFoundException("Pacijent sa ID: " + patientId + " nije pronađen."));
+
+        List<Appointment> appointments;
+        if (status != null) {
+            appointments = appointmentRepository.findByPatientAndStatus(patient, status);
+        } else {
+            appointments = appointmentRepository.findByPatient(patient);
+        }
+
+        return appointments.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
     @Transactional
     public void processAppointment(Long appointmentId) {
         System.out.println("Processing appointment ID: " + appointmentId);

@@ -25,6 +25,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -52,8 +54,8 @@ class AppointmentControllerTest {
     private UserDetailsService userDetailsService;
 
     @Test
-    @WithMockUser(roles = "DOCTOR")
-    void whenGetAllAppointments_asDoctor_shouldReturnAllAppointments() throws Exception {
+    @WithMockUser(username = "doctor.petrovic", roles = "DOCTOR")
+    void whenGetAppointments_asDoctor_withoutFilter_shouldReturnTheirAppointments() throws Exception {
         PatientDTO patientDTO = new PatientDTO();
         patientDTO.setId(1L);
         patientDTO.setFirstName("Marko");
@@ -63,6 +65,11 @@ class AppointmentControllerTest {
         doctorDTO.setId(1L);
         doctorDTO.setFirstName("Petar");
         doctorDTO.setLastName("Petrović");
+
+        DoctorDTO doctorDTO2 = new DoctorDTO();
+        doctorDTO.setId(2L);
+        doctorDTO.setFirstName("Milan");
+        doctorDTO.setLastName("Milovanovic");
 
         AppointmentResponseDTO appointment1 = new AppointmentResponseDTO();
         appointment1.setId(1L);
@@ -76,44 +83,77 @@ class AppointmentControllerTest {
         appointment2.setPatient(patientDTO);
         appointment2.setDoctor(doctorDTO);
 
-        List<AppointmentResponseDTO> allAppointments = List.of(appointment1, appointment2);
+        AppointmentResponseDTO appointment3 = new AppointmentResponseDTO();
+        appointment3.setId(3L);
+        appointment3.setStatus(AppointmentStatus.PENDING);
+        appointment3.setPatient(patientDTO);
+        appointment3.setDoctor(doctorDTO2);
 
-        given(appointmentService.getAllAppointments()).willReturn(allAppointments);
+        AppointmentResponseDTO appointment4 = new AppointmentResponseDTO();
+        appointment4.setId(4L);
+        appointment4.setStatus(AppointmentStatus.CONFIRMED);
+        appointment4.setPatient(patientDTO);
+        appointment4.setDoctor(doctorDTO2);
+
+        List<AppointmentResponseDTO> doctorAppointments = List.of(appointment1, appointment2);
+
+        given(appointmentService.getAppointmentsForUser(eq("doctor.petrovic"), isNull(AppointmentStatus.class)))
+                .willReturn(doctorAppointments);
 
         mockMvc.perform(get("/api/appointments"))
                 .andExpect(status().isOk())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id", is(1)))
-                .andExpect(jsonPath("$[0].status", is("PENDING")))
-                .andExpect(jsonPath("$[1].id", is(2)))
-                .andExpect(jsonPath("$[1].status", is("CONFIRMED")));
+                .andExpect(jsonPath("$[0].id", is(1)));
+
+        verify(appointmentService).getAppointmentsForUser("doctor.petrovic", null);
     }
 
     @Test
-    @WithMockUser(roles = "PATIENT")
-    void whenGetAllAppointments_asPatient_shouldReturnForbidden() throws Exception {
+    @WithMockUser(username = "patient.markovic", roles = "PATIENT")
+    void whenGetAppointments_asPatient_shouldReturnTheirOwnAppointments() throws Exception {
+        PatientDTO patientDTO = new PatientDTO();
+        patientDTO.setFirstName("Marko");
+
+        AppointmentResponseDTO patientAppointment = new AppointmentResponseDTO();
+        patientAppointment.setId(10L);
+        patientAppointment.setStatus(AppointmentStatus.CONFIRMED);
+        patientAppointment.setPatient(patientDTO);
+
+        List<AppointmentResponseDTO> patientAppointments = List.of(patientAppointment);
+
+        given(appointmentService.getAppointmentsForUser(eq("patient.markovic"), isNull(AppointmentStatus.class)))
+                .willReturn(patientAppointments);
+
         mockMvc.perform(get("/api/appointments"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(10)));
+
+        verify(appointmentService).getAppointmentsForUser("patient.markovic", null);
     }
 
     @Test
-    @WithMockUser(roles = "DOCTOR")
-    void whenGetAllAppointments_withStatusFilter_shouldReturnFilteredAppointments() throws Exception {
+    @WithMockUser(username = "doctor.petrovic", roles = "DOCTOR")
+    void whenGetAppointments_asDoctor_withStatusFilter_shouldReturnFilteredAppointments() throws Exception {
         AppointmentResponseDTO confirmedAppointment = new AppointmentResponseDTO();
         confirmedAppointment.setId(1L);
         confirmedAppointment.setStatus(AppointmentStatus.CONFIRMED);
 
         List<AppointmentResponseDTO> filteredAppointments = List.of(confirmedAppointment);
 
-        given(appointmentService.getAppointmentsByStatus(AppointmentStatus.CONFIRMED))
+        given(appointmentService.getAppointmentsForUser(eq("doctor.petrovic"), eq(AppointmentStatus.CONFIRMED)))
                 .willReturn(filteredAppointments);
 
         mockMvc.perform(get("/api/appointments?status=CONFIRMED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].status", is("CONFIRMED")));
+
+        verify(appointmentService).getAppointmentsForUser("doctor.petrovic", AppointmentStatus.CONFIRMED);
+
+        verify(appointmentService, never()).getAllAppointments();
     }
 
     @Test
