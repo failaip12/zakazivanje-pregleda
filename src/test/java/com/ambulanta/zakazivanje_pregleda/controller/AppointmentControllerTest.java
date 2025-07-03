@@ -53,7 +53,58 @@ class AppointmentControllerTest {
 
     @MockitoBean
     private UserDetailsService userDetailsService;
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void whenGetAppointments_asAdmin_shouldCallCorrectServiceMethod() throws Exception {
+        PatientDTO patientDTO = new PatientDTO();
+        patientDTO.setId(1L);
+        patientDTO.setFirstName("Marko");
+        patientDTO.setLastName("Marković");
 
+        DoctorDTO doctorDTO = new DoctorDTO();
+        doctorDTO.setId(1L);
+        doctorDTO.setFirstName("Petar");
+        doctorDTO.setLastName("Petrović");
+
+        DoctorDTO doctorDTO2 = new DoctorDTO();
+        doctorDTO.setId(2L);
+        doctorDTO.setFirstName("Milan");
+        doctorDTO.setLastName("Milovanovic");
+
+        AppointmentResponseDTO appointment1 = new AppointmentResponseDTO();
+        appointment1.setId(1L);
+        appointment1.setStatus(AppointmentStatus.PENDING);
+        appointment1.setPatient(patientDTO);
+        appointment1.setDoctor(doctorDTO);
+
+        AppointmentResponseDTO appointment2 = new AppointmentResponseDTO();
+        appointment2.setId(2L);
+        appointment2.setStatus(AppointmentStatus.CONFIRMED);
+        appointment2.setPatient(patientDTO);
+        appointment2.setDoctor(doctorDTO);
+
+        AppointmentResponseDTO appointment3 = new AppointmentResponseDTO();
+        appointment3.setId(3L);
+        appointment3.setStatus(AppointmentStatus.PENDING);
+        appointment3.setPatient(patientDTO);
+        appointment3.setDoctor(doctorDTO2);
+
+        AppointmentResponseDTO appointment4 = new AppointmentResponseDTO();
+        appointment4.setId(4L);
+        appointment4.setStatus(AppointmentStatus.CONFIRMED);
+        appointment4.setPatient(patientDTO);
+        appointment4.setDoctor(doctorDTO2);
+
+        List<AppointmentResponseDTO> allAppointments = List.of(appointment1, appointment2, appointment3, appointment4);
+        given(appointmentService.getAppointmentsForUser("admin", null)).willReturn(allAppointments);
+
+        mockMvc.perform(get("/api/appointments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$", hasSize(4)));
+
+        verify(appointmentService).getAppointmentsForUser("admin", null);
+    }
     @Test
     @WithMockUser(username = "doctor.petrovic", roles = "DOCTOR")
     void whenGetAppointments_asDoctor_withoutFilter_shouldReturnTheirAppointments() throws Exception {
