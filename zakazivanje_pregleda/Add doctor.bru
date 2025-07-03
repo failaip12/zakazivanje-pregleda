@@ -1,0 +1,21 @@
+meta {
+  name: Add doctor
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:8080/api/doctors
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "firstName": "Lekar",
+    "lastName": "Lekarovic",
+    "password": "123",
+    "specialization": "Specijalan Lekar",
+    "username": "12"
+  }
+}
