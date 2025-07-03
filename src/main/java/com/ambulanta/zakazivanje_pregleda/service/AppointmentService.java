@@ -7,6 +7,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.PatientDTO;
 import com.ambulanta.zakazivanje_pregleda.exception.AppointmentNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.exception.DoctorNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.exception.PatientNotFoundException;
+import com.ambulanta.zakazivanje_pregleda.exception.UserNotFoundException;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
@@ -73,7 +74,7 @@ public class AppointmentService {
     @Transactional
     public List<AppointmentResponseDTO> getAppointmentsForUser(String username, AppointmentStatus status) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new DoctorNotFoundException("Korisnik sa username: " + username + " nije pronađen."));
+                .orElseThrow(() -> new UserNotFoundException("Korisnik sa username: " + username + " nije pronađen."));
         Role role = user.getRole();
         switch (role) {
             case ROLE_DOCTOR -> {

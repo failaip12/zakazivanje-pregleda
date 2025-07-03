@@ -140,6 +140,15 @@ class AppointmentServiceTest {
 
         assertThat(savedAppointment.getId()).isEqualTo(appointmentId);
     }
+
+    @Test
+    void whenGetAppointmentsForUser_withNonExistentUsername_shouldThrowException() {
+        String nonExistentUsername = "nepostojeci";
+        when(userRepository.findByUsername(nonExistentUsername)).thenReturn(Optional.empty());
+        assertThrows(UserNotFoundException.class, () -> {
+            appointmentService.getAppointmentsForUser(nonExistentUsername, null);
+        });
+    }
     @Test
     void whenProcessAppointment_withNonExistentAppointmentId_shouldThrowException() {
         Long nonExistentId = 999L;
