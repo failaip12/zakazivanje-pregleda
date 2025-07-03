@@ -3,6 +3,7 @@ package com.ambulanta.zakazivanje_pregleda.config;
 import com.ambulanta.zakazivanje_pregleda.security.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,21 +28,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
-                        )
+        .csrf(AbstractHttpConfigurer::disable)
+        .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) ->
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
                 )
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/appointments").hasRole("PATIENT")
-                        .requestMatchers(HttpMethod.GET, "/api/appointments").hasAnyRole("DOCTOR", "PATIENT", "ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        )
+        .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                .requestMatchers("/", "/index.html").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/appointments").hasRole("PATIENT")
+                .requestMatchers(HttpMethod.GET, "/api/appointments").hasAnyRole("DOCTOR", "PATIENT", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/doctors").hasAnyRole("PATIENT", "ADMIN", "DOCTOR")
+                .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
+                .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

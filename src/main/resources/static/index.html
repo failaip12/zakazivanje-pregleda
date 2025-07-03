@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zakazivanje Pregleda</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Ambulanta "Zdravlje"</h1>
+    <div id="userInfo" class="hidden">
+        <span id="welcomeMessage"></span>
+        <button id="logoutButton">Odjavi se</button>
+    </div>
+</header>
+
+<main>
+    <div id="authView">
+        <div class="form-container">
+            <h2>Prijava</h2>
+            <form id="loginForm">
+                <input type="text" id="loginUsername" placeholder="Korisničko ime (JMBG)" required>
+                <input type="password" id="loginPassword" placeholder="Lozinka" required>
+                <button type="submit">Prijavi se</button>
+            </form>
+        </div>
+        <div class="form-container">
+            <h2>Registracija Pacijenta</h2>
+            <form id="registerForm">
+                <input type="text" id="registerFirstName" placeholder="Ime" required>
+                <input type="text" id="registerLastName" placeholder="Prezime" required>
+                <input type="text" id="registerUsername" placeholder="JMBG" required>
+                <input type="password" id="registerPassword" placeholder="Lozinka" required>
+                <button type="submit">Registruj se</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="patientView" class="hidden view">
+        <h2>Dobrodošli, pacijente!</h2>
+        <div class="form-container">
+            <h3>Zakažite novi pregled</h3>
+            <form id="appointmentForm">
+                <label for="doctorId">Izaberite lekara:</label>
+                <select id="doctorId" required></select> <!-- Popunićemo dinamički -->
+                <label for="appointmentTime">Izaberite datum i vreme:</label>
+                <input type="datetime-local" id="appointmentTime" required>
+                <button type="submit">Zakaži</button>
+            </form>
+        </div>
+        <h3>Vaši termini</h3>
+        <div id="patientAppointments"></div>
+    </div>
+
+    <div id="doctorView" class="hidden view">
+        <h2>Dobrodošli, doktore!</h2>
+        <h3>Vaši zakazani termini</h3>
+        <div id="doctorAppointments"></div>
+    </div>
+
+    <div id="adminView" class="hidden view">
+        <h2>Administracija</h2>
+        <div class="form-container">
+            <h3>Dodaj novog lekara</h3>
+            <form id="addDoctorForm">
+                <input type="text" id="doctorFirstName" placeholder="Ime lekara" required>
+                <input type="text" id="doctorLastName" placeholder="Prezime lekara" required>
+                <input type="text" id="doctorUsername" placeholder="JMBG lekara" required>
+                <input type="password" id="doctorPassword" placeholder="Lozinka" required>
+                <input type="text" id="doctorSpecialization" placeholder="Specijalizacija" required>
+                <button type="submit">Dodaj lekara</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="messageArea"></div>
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>
