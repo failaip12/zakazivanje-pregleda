@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -101,7 +102,6 @@ class AppointmentControllerTest {
                 .willReturn(doctorAppointments);
 
         mockMvc.perform(get("/api/appointments"))
-                .andExpect(status().isOk())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -220,6 +220,18 @@ class AppointmentControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message", is(errorMessage)))
                 .andExpect(jsonPath("$.status", is(404)));
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void whenPostAppointment_withMalformedJson_shouldReturnBadRequest() throws Exception {
+        String malformedJson = "{\"doctorId\": 1 \"appointmentTime\": \"2025-12-01T10:00:00\"}";
+
+        mockMvc.perform(post("/api/appointments")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
