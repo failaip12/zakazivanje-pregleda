@@ -91,10 +91,42 @@ table {
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 12px;
     text-align: left;
 }
 
 th {
     background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.status {
+    padding: 5px 10px;
+    border-radius: 12px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: #f0ad4e;
+}
+
+.status-confirmed {
+    background-color: #5cb85c;
+}
+
+.status-rejected {
+    background-color: #d9534f;
+}
+.field-error {
+    color: #d9534f;
+    font-size: 12px;
+    display: block;
+    margin: -5px 0 10px 5px;
 }

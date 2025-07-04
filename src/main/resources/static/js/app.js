@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminView = document.getElementById('adminView');
     const userInfo = document.getElementById('userInfo');
     const welcomeMessage = document.getElementById('welcomeMessage');
-    const messageArea = document.getElementById('messageArea');
+    const doctorAppointments = document.getElementById('doctorAppointments');
 
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
@@ -124,9 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleCreateAppointment(e) {
         e.preventDefault();
+
         const token = localStorage.getItem('jwtToken');
         const doctorId = document.getElementById('doctorId').value;
         const appointmentTime = document.getElementById('appointmentTime').value;
+
+        clearErrorMessages();
 
         try {
             const response = await fetch('/api/appointments', {
@@ -141,15 +144,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (response.status === 202) {
+            if (response.ok) {
                 showMessage('Zahtev za termin je uspešno poslat i čeka obradu.', 'success');
-                loadPatientAppointments();
+                //document.getElementById('appointmentForm').reset();
+                setTimeout(loadPatientAppointments, 1000);
             } else {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Greška pri zakazivanju.');
+                displayErrors(errorData);
             }
-        } catch (error) {
-            showMessage(error.message, 'error');
+        } catch (networkError) {
+            showMessage('Mrežna greška. Proverite konekciju.', 'error');
+            console.error('Network error:', networkError);
         }
     }
 
@@ -192,8 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadPatientAppointments() {
         const token = localStorage.getItem('jwtToken');
 
+        const appointmentsContainer  = document.getElementById('patientAppointments');
+        appointmentsContainer.innerHTML = 'Učitavanje termina...';
+
         if (!token) {
             showMessage('Niste prijavljeni.', 'error');
+            appointmentsContainer.innerHTML = '';
             return;
         }
 
@@ -210,11 +219,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const appointments = await response.json();
+            renderAppointmentsTable(appointments, appointmentsContainer);
 
         } catch (error) {
             showMessage(error.message, 'error');
         }
     }
+
+    function renderAppointmentsTable(appointments, container) {
+        container.innerHTML = '';
+
+        if (appointments.length === 0) {
+            container.innerHTML = '<p>Nemate zakazanih termina.</p>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Lekar</th>
+                    <th>Specijalizacija</th>
+                    <th>Datum i Vreme</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        `;
+
+        const tbody = table.querySelector('tbody');
+
+        appointments.forEach(app => {
+            const row = document.createElement('tr');
+
+            const formattedDateTime = new Date(app.appointmentTime).toLocaleString('sr-RS', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let statusText;
+            let statusClass;
+            switch (app.status) {
+                case 'PENDING':
+                    statusText = 'Na čekanju';
+                    statusClass = 'status-pending';
+                    break;
+                case 'CONFIRMED':
+                    statusText = 'Potvrđen';
+                    statusClass = 'status-confirmed';
+                    break;
+                case 'REJECTED':
+                    statusText = 'Odbijen';
+                    statusClass = 'status-rejected';
+                    break;
+                default:
+                    statusText = app.status;
+                    statusClass = '';
+            }
+
+            row.innerHTML = `
+                <td>Dr. ${app.doctor.firstName} ${app.doctor.lastName}</td>
+                <td>${app.doctor.specialization}</td>
+                <td>${formattedDateTime}</td>
+                <td><span class="status ${statusClass}">${statusText}</span></td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        container.appendChild(table);
+    }
+
     async function loadDoctorAppointments() {
         const token = localStorage.getItem('jwtToken');
 
@@ -292,4 +370,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
     }
+
+    function displayErrors(errorData) {
+        if (errorData.message) {
+            showMessage(errorData.message, 'error');
+        }
+
+        if (errorData.errors) {
+            for (const field in errorData.errors) {
+                const inputElement = document.getElementById(field);
+                if (inputElement) {
+                    const errorSpan = document.createElement('span');
+                    errorSpan.className = 'field-error';
+                    errorSpan.textContent = errorData.errors[field];
+
+                    inputElement.insertAdjacentElement('afterend', errorSpan);
+                }
+            }
+        }
+    }
+
+    function clearErrorMessages() {
+        document.querySelectorAll('.field-error').forEach(el => el.remove());
+        messageArea.textContent = '';
+        messageArea.className = '';
+    }
+
 });
