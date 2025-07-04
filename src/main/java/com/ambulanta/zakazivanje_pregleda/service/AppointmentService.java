@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -172,6 +171,7 @@ public class AppointmentService {
         patientDTO.setId(appointment.getPatient().getId());
         patientDTO.setFirstName(patientUser.getFirstName());
         patientDTO.setLastName(patientUser.getLastName());
+        patientDTO.setJmbg(appointment.getPatient().getJmbg());
 
         DoctorDTO doctorDTO = new DoctorDTO();
         doctorDTO.setId(appointment.getDoctor().getId());

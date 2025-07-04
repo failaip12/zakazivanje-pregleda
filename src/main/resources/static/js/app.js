@@ -19,10 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('jwtToken');
         if (token) {
             const payload = parseJwt(token);
-            const userRole = payload.roles[0];
-            showView(userRole);
-            userInfo.classList.remove('hidden');
-            welcomeMessage.textContent = `Prijavljeni ste kao: ${payload.sub}`;
+            if (payload) {
+                const userRole = payload.roles[0];
+                showView(userRole);
+                userInfo.classList.remove('hidden');
+                welcomeMessage.textContent = `Prijavljeni ste kao: ${payload.sub}`;
+            } else {
+                handleLogout();
+            }
         } else {
             showView('GUEST');
         }
@@ -52,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
 
+        clearErrorMessages();
+
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
@@ -64,17 +70,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!response.ok) {
-                throw new Error('Pogrešno korisničko ime ili lozinka.');
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('jwtToken', data.token);
+                showMessage('Uspešna prijava!', 'success');
+                checkAuthState();
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Pogrešno korisničko ime ili lozinka.' }));
+                displayErrors(errorData);
             }
 
-            const data = await response.json();
-            localStorage.setItem('jwtToken', data.token);
-            showMessage('Uspešna prijava!', 'success');
-            checkAuthState();
-
         } catch (error) {
-            showMessage(error.message, 'error');
+            //showMessage(error.message, 'error');
+            showMessage('Mrežna greška. Proverite konekciju.', 'error');
         }
     }
 
@@ -85,6 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('registerUsername').value;
         const jmbg = document.getElementById('registerJMBG').value;
         const password = document.getElementById('registerPassword').value;
+
+        clearErrorMessages();
 
         try {
             const response = await fetch('/api/auth/register', {
@@ -101,15 +111,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!response.ok) {
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('jwtToken', data.token);
+                showMessage('Uspešna registracija! Sada se možete prijaviti.', 'success');
+                e.target.reset();
+            } else {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Greska u registraciji.');
+                displayErrors(errorData);
             }
-
-            const data = await response.json();
-            localStorage.setItem('jwtToken', data.token);
-            showMessage('Uspešna registracija!', 'success');
-            checkAuthState();
 
         } catch (error) {
             showMessage(error.message, 'error');
@@ -215,18 +225,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error('Nije moguće učitati listu zakazivanja.');
+                throw new Error('Nije moguće učitati listu termina.');
             }
 
             const appointments = await response.json();
-            renderAppointmentsTable(appointments, appointmentsContainer);
+            renderAppointmentsTable(appointments, appointmentsContainer, 'patient');
 
         } catch (error) {
             showMessage(error.message, 'error');
+            appointmentsContainer.innerHTML = '<p>Greška pri učitavanju termina.</p>';
         }
     }
 
-    function renderAppointmentsTable(appointments, container) {
+    function renderAppointmentsTable(appointments, container, viewType) {
         container.innerHTML = '';
 
         if (appointments.length === 0) {
@@ -235,17 +246,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const table = document.createElement('table');
+        const headerRow = viewType === 'doctor'
+            ? '<th>Pacijent</th><th>JMBG</th>'
+            : '<th>Lekar</th><th>Specijalizacija</th>';
+
         table.innerHTML = `
             <thead>
                 <tr>
-                    <th>Lekar</th>
-                    <th>Specijalizacija</th>
+                    ${headerRow}
                     <th>Datum i Vreme</th>
                     <th>Status</th>
                 </tr>
             </thead>
-            <tbody>
-            </tbody>
+            <tbody></tbody>
         `;
 
         const tbody = table.querySelector('tbody');
@@ -281,12 +294,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusClass = '';
             }
 
+            const mainCell = viewType === 'doctor'
+                ? `<td>${app.patient.firstName} ${app.patient.lastName}</td><td>${app.patient.jmbg || 'N/A'}</td>`
+                : `<td>Dr. ${app.doctor.firstName} ${app.doctor.lastName}</td><td>${app.doctor.specialization}</td>`;
+
             row.innerHTML = `
-                <td>Dr. ${app.doctor.firstName} ${app.doctor.lastName}</td>
-                <td>${app.doctor.specialization}</td>
+                ${mainCell}
                 <td>${formattedDateTime}</td>
                 <td><span class="status ${statusClass}">${statusText}</span></td>
             `;
+
             tbody.appendChild(row);
         });
 
@@ -295,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDoctorAppointments() {
         const token = localStorage.getItem('jwtToken');
+
+        const appointmentsContainer = document.getElementById('doctorAppointments');
+        appointmentsContainer.innerHTML = 'Učitavanje termina...';
 
         if (!token) {
             showMessage('Niste prijavljeni.', 'error');
@@ -314,9 +334,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const appointments = await response.json();
+            renderAppointmentsTable(appointments, appointmentsContainer, 'doctor');
 
         } catch (error) {
             showMessage(error.message, 'error');
+            appointmentsContainer.innerHTML = '<p>Greška pri učitavanju termina.</p>';
         }
     }
     async function handleAddDoctor(e) {
@@ -327,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('doctorUsername').value;
         const password = document.getElementById('doctorPassword').value;
         const specialization = document.getElementById('doctorSpecialization').value;
+
+        clearErrorMessages();
 
         try {
             const response = await fetch('/api/doctors', {
@@ -344,13 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!response.ok) {
+            if (response.ok) {
+                showMessage('Novi doktor je uspešno dodat!', 'success');
+                e.target.reset();
+            } else {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Greska pri dodavanju novog doktora.');
+                displayErrors(errorData);
             }
-
-            const data = await response.json();
-            showMessage('Uspešno dodavanje novog doktora!', 'success');
 
         } catch (error) {
             showMessage(error.message, 'error');
@@ -365,8 +389,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function parseJwt(token) {
         try {
-            return JSON.parse(atob(token.split('.')[1]));
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            const payload = JSON.parse(jsonPayload);
+            if (payload.exp * 1000 < Date.now()) {
+                console.warn("JWT token je istekao.");
+                return null;
+            }
+            payload.roles = payload.roles || (payload.authorities || []).map(a => a.authority);
+            return payload;
+
         } catch (e) {
+            console.error("Greška pri parsiranju JWT:", e);
             return null;
         }
     }
