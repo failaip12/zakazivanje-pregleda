@@ -3,6 +3,7 @@ package com.ambulanta.zakazivanje_pregleda.service;
 import com.ambulanta.zakazivanje_pregleda.dto.AuthRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.AuthResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.RegisterRequestDTO;
+import com.ambulanta.zakazivanje_pregleda.model.Patient;
 import com.ambulanta.zakazivanje_pregleda.model.Role;
 import com.ambulanta.zakazivanje_pregleda.model.User;
 import com.ambulanta.zakazivanje_pregleda.repository.PatientRepository;
@@ -88,6 +89,17 @@ class AuthServiceTest {
         });
 
         assertThat(thrown.getMessage()).isEqualTo("Korisničko ime već postoji!");
+    }
+
+    @Test
+    void whenRegister_withExistingJMBG_shouldThrowException() {
+        when(patientRepository.findByJmbg(registerRequest.getJmbg())).thenReturn(Optional.of(new Patient()));
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> {
+            authService.register(registerRequest);
+        });
+
+        assertThat(thrown.getMessage()).isEqualTo("JMBG već postoji!");
     }
 
     @Test
