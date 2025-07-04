@@ -19,5 +19,6 @@ public class Patient {
     @JsonBackReference
     private User user;
 
+    @Column(unique = true, nullable = false)
     private String jmbg;
 }

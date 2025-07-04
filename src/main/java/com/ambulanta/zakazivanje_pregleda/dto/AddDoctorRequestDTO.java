@@ -1,7 +1,6 @@
 package com.ambulanta.zakazivanje_pregleda.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -13,8 +12,7 @@ public class AddDoctorRequestDTO {
     @NotBlank(message = "Prezime lekara ne sme biti prazno.")
     private String lastName;
 
-    @NotBlank(message = "JMBG lekara ne sme biti prazan.")
-    @Pattern(regexp = "\\d{13}", message = "JMBG mora sadržati tačno 13 cifara.")
+    @NotBlank(message = "Username lekara ne sme biti prazan.")
     private String username;
 
     @NotBlank(message = "Lozinka ne sme biti prazna.")

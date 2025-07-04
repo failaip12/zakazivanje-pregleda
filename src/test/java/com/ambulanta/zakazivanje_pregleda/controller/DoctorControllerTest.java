@@ -132,13 +132,12 @@ class DoctorControllerTest {
         request.setLastName("Doktor");
         request.setUsername("123");
         request.setPassword("lozinka");
-        request.setSpecialization("Hirurg");
 
         mockMvc.perform(post("/api/doctors")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.username", is("JMBG mora sadržati tačno 13 cifara.")));
+                .andExpect(jsonPath("$.specialization", is("Specijalizacija ne sme biti prazna.")));
     }
 }

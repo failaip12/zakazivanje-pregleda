@@ -21,7 +21,7 @@
         <div class="form-container">
             <h2>Prijava</h2>
             <form id="loginForm">
-                <input type="text" id="loginUsername" placeholder="Korisničko ime (JMBG)" required>
+                <input type="text" id="loginUsername" placeholder="Korisničko ime" required>
                 <input type="password" id="loginPassword" placeholder="Lozinka" required>
                 <button type="submit">Prijavi se</button>
             </form>
@@ -31,7 +31,8 @@
             <form id="registerForm">
                 <input type="text" id="registerFirstName" placeholder="Ime" required>
                 <input type="text" id="registerLastName" placeholder="Prezime" required>
-                <input type="text" id="registerUsername" placeholder="JMBG" required>
+                <input type="text" id="registerUsername" placeholder="Username" required>
+                <input type="text" id="registerJMBG" placeholder="JMBG" required>
                 <input type="password" id="registerPassword" placeholder="Lozinka" required>
                 <button type="submit">Registruj se</button>
             </form>
@@ -44,7 +45,7 @@
             <h3>Zakažite novi pregled</h3>
             <form id="appointmentForm">
                 <label for="doctorId">Izaberite lekara:</label>
-                <select id="doctorId" required></select> <!-- Popunićemo dinamički -->
+                <select id="doctorId" required></select>
                 <label for="appointmentTime">Izaberite datum i vreme:</label>
                 <input type="datetime-local" id="appointmentTime" required>
                 <button type="submit">Zakaži</button>
@@ -67,7 +68,7 @@
             <form id="addDoctorForm">
                 <input type="text" id="doctorFirstName" placeholder="Ime lekara" required>
                 <input type="text" id="doctorLastName" placeholder="Prezime lekara" required>
-                <input type="text" id="doctorUsername" placeholder="JMBG lekara" required>
+                <input type="text" id="doctorUsername" placeholder="Username lekara" required>
                 <input type="password" id="doctorPassword" placeholder="Lozinka" required>
                 <input type="text" id="doctorSpecialization" placeholder="Specijalizacija" required>
                 <button type="submit">Dodaj lekara</button>

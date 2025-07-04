@@ -5,6 +5,7 @@ import com.ambulanta.zakazivanje_pregleda.dto.AuthResponseDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.RegisterRequestDTO;
 import com.ambulanta.zakazivanje_pregleda.model.Role;
 import com.ambulanta.zakazivanje_pregleda.model.User;
+import com.ambulanta.zakazivanje_pregleda.repository.PatientRepository;
 import com.ambulanta.zakazivanje_pregleda.repository.UserRepository;
 import com.ambulanta.zakazivanje_pregleda.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,8 @@ class AuthServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private PatientRepository patientRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtService jwtService;
@@ -46,7 +49,8 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         registerRequest = new RegisterRequestDTO();
-        registerRequest.setUsername("1234567890123");
+        registerRequest.setJmbg("1234567890123");
+        registerRequest.setUsername("pera123");
         registerRequest.setPassword("password123");
         registerRequest.setFirstName("Pera");
         registerRequest.setLastName("Peric");
@@ -64,7 +68,7 @@ class AuthServiceTest {
         verify(userRepository).save(userCaptor.capture());
         User savedUser = userCaptor.getValue();
 
-        assertThat(savedUser.getUsername()).isEqualTo("1234567890123");
+        assertThat(savedUser.getUsername()).isEqualTo("pera123");
         assertThat(savedUser.getPassword()).isEqualTo("hashedPassword");
         assertThat(savedUser.getFirstName()).isEqualTo("Pera");
         assertThat(savedUser.getRole()).isEqualTo(Role.ROLE_PATIENT);

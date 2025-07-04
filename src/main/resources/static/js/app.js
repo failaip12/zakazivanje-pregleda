@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const firstName = document.getElementById('registerFirstName').value;
         const lastName = document.getElementById('registerLastName').value;
         const username = document.getElementById('registerUsername').value;
+        const jmbg = document.getElementById('registerJMBG').value;
         const password = document.getElementById('registerPassword').value;
 
         try {
@@ -94,13 +95,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     username,
                     password,
+                    jmbg,
                     firstName,
                     lastName
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Greska u registraciji.');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Greska u registraciji.');
             }
 
             const data = await response.json();
@@ -208,8 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const appointments = await response.json();
 
-            console.log(appointments);
-
         } catch (error) {
             showMessage(error.message, 'error');
         }
@@ -235,8 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const appointments = await response.json();
-
-            console.log(appointments);
 
         } catch (error) {
             showMessage(error.message, 'error');
@@ -268,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error('Greska pri dodavanju novog doktora.');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Greska pri dodavanju novog doktora.');
             }
 
             const data = await response.json();

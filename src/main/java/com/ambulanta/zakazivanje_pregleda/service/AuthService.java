@@ -2,6 +2,7 @@ package com.ambulanta.zakazivanje_pregleda.service;
 
 import com.ambulanta.zakazivanje_pregleda.dto.*;
 import com.ambulanta.zakazivanje_pregleda.model.*;
+import com.ambulanta.zakazivanje_pregleda.repository.PatientRepository;
 import com.ambulanta.zakazivanje_pregleda.repository.UserRepository;
 import com.ambulanta.zakazivanje_pregleda.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
+    private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -21,6 +23,9 @@ public class AuthService {
     public AuthResponseDTO register(RegisterRequestDTO request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalStateException("Korisničko ime već postoji!");
+        }
+        if (patientRepository.findByJmbg(request.getJmbg()).isPresent()) {
+            throw new IllegalStateException("JMBG već postoji!");
         }
         User user = new User();
         user.setUsername(request.getUsername());
@@ -30,7 +35,7 @@ public class AuthService {
         user.setRole(Role.ROLE_PATIENT);
 
         Patient patient = new Patient();
-        patient.setJmbg(request.getUsername());
+        patient.setJmbg(request.getJmbg());
         user.setPatient(patient);
 
         userRepository.save(user);

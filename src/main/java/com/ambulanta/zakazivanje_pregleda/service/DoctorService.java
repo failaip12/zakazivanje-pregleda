@@ -33,7 +33,7 @@ public class DoctorService {
     @Transactional
     public DoctorDTO addDoctor(AddDoctorRequestDTO request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new IllegalStateException("Korisnik sa JMBG-om " + request.getUsername() + " već postoji.");
+            throw new IllegalStateException("Doktor sa username-om " + request.getUsername() + " već postoji.");
         }
 
         User doctorUser = new User();
