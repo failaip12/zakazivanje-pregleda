@@ -299,7 +299,8 @@ class AppointmentControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.doctorId").exists())
-                .andExpect(jsonPath("$.appointmentTime").exists());
+                .andExpect(jsonPath("$.errors.doctorId", is("Id lekara ne sme biti prazan.")))
+                .andExpect(jsonPath("$.errors.appointmentTime", is("Vreme pregleda mora biti definisano.")))
+                .andExpect(jsonPath("$.message", is("Podaci nisu validni.")));
     }
 }

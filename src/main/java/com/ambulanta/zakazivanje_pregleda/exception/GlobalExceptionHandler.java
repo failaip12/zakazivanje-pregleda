@@ -1,6 +1,6 @@
 package com.ambulanta.zakazivanje_pregleda.exception;
 
-import com.ambulanta.zakazivanje_pregleda.dto.ErrorResponseDTO;
+import com.ambulanta.zakazivanje_pregleda.dto.ApiErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,20 +18,25 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiErrorResponseDTO> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Podaci nisu validni.",
+                errors
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(DoctorNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleDoctorNotFoundException(DoctorNotFoundException ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handleDoctorNotFoundException(DoctorNotFoundException ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage()
@@ -40,9 +45,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AppointmentNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAppointmentNotFoundException(AppointmentNotFoundException ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handleAppointmentNotFoundException(AppointmentNotFoundException ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage()
@@ -51,15 +55,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponseDTO> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ApiErrorResponseDTO> handleTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String name = ex.getName();
         String type = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : null;
         Object value = ex.getValue();
         String message = String.format("Parametar '%s' ima nevalidnu vrednost '%s'. Očekivani tip je '%s'.",
                 name, value, type);
 
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 message
@@ -68,11 +71,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponseDTO> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ApiErrorResponseDTO> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         String message = "Zahtev ima neispravan format (malformed JSON).";
 
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 message
@@ -81,9 +83,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(PatientNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handlePatientNotFoundException(PatientNotFoundException ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handlePatientNotFoundException(PatientNotFoundException ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage()
@@ -92,9 +93,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidAppointmentTimeException.class)
-    public ResponseEntity<ErrorResponseDTO> handleInvalidAppointmentTimeException(InvalidAppointmentTimeException ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handleInvalidAppointmentTimeException(InvalidAppointmentTimeException ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
                 ex.getMessage()
@@ -103,9 +103,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUserNotFoundException(UserNotFoundException ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handleUserNotFoundException(UserNotFoundException ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
                 ex.getMessage()
@@ -114,9 +113,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponseDTO> handleGenericException(Exception ex) {
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
-                LocalDateTime.now(),
+    public ResponseEntity<ApiErrorResponseDTO> handleGenericException(Exception ex) {
+        ApiErrorResponseDTO errorResponse = new ApiErrorResponseDTO(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "Internal Server Error",
                 "Došlo je do nepredviđene greške na serveru: " + ex.getMessage()

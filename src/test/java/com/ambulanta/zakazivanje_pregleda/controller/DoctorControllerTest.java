@@ -138,6 +138,8 @@ class DoctorControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.specialization", is("Specijalizacija ne sme biti prazna.")));
+                .andExpect(jsonPath("$.message", is("Podaci nisu validni.")))
+                .andExpect(jsonPath("$.status", is(400)))
+                .andExpect(jsonPath("$.errors.specialization", is("Specijalizacija ne sme biti prazna.")));
     }
 }
