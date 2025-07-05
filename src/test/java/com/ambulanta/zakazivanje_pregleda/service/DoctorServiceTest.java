@@ -1,7 +1,10 @@
 package com.ambulanta.zakazivanje_pregleda.service;
 
 import com.ambulanta.zakazivanje_pregleda.dto.AddDoctorRequestDTO;
+import com.ambulanta.zakazivanje_pregleda.dto.AppointmentResponseDTO;
+import com.ambulanta.zakazivanje_pregleda.dto.BookedSlotDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
+import com.ambulanta.zakazivanje_pregleda.model.AppointmentStatus;
 import com.ambulanta.zakazivanje_pregleda.model.Doctor;
 import com.ambulanta.zakazivanje_pregleda.model.Role;
 import com.ambulanta.zakazivanje_pregleda.model.User;
@@ -15,12 +18,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,7 +37,8 @@ class DoctorServiceTest {
     private UserRepository userRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
-
+    @Mock
+    private AppointmentService appointmentService;
     @InjectMocks
     private DoctorService doctorService;
 
@@ -136,4 +142,26 @@ class DoctorServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    @Test
+    void whenGetDoctorAppointments_shouldReturnBookedSlots() {
+        Long doctorId = 1L;
+        LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0);
+        LocalDateTime time2 = LocalDateTime.of(2025, 1, 1, 10, 15);
+
+        AppointmentResponseDTO appointment1 = new AppointmentResponseDTO();
+        appointment1.setAppointmentTime(time1);
+
+        AppointmentResponseDTO appointment2 = new AppointmentResponseDTO();
+        appointment2.setAppointmentTime(time2);
+
+        List<AppointmentResponseDTO> appointments = List.of(appointment1, appointment2);
+
+        given(appointmentService.getAppointmentsForDoctor(doctorId, AppointmentStatus.CONFIRMED)).willReturn(appointments);
+
+        List<BookedSlotDTO> result = doctorService.getDoctorAppointments(doctorId);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getAppointmentTime()).isEqualTo(time1);
+        assertThat(result.get(1).getAppointmentTime()).isEqualTo(time2);
+    }
 }

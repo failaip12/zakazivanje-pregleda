@@ -2,6 +2,7 @@ package com.ambulanta.zakazivanje_pregleda.controller;
 
 import com.ambulanta.zakazivanje_pregleda.config.SecurityConfig;
 import com.ambulanta.zakazivanje_pregleda.dto.AddDoctorRequestDTO;
+import com.ambulanta.zakazivanje_pregleda.dto.BookedSlotDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
 import com.ambulanta.zakazivanje_pregleda.security.JwtAuthFilter;
 import com.ambulanta.zakazivanje_pregleda.security.JwtService;
@@ -17,6 +18,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -141,5 +143,26 @@ class DoctorControllerTest {
                 .andExpect(jsonPath("$.message", is("Podaci nisu validni.")))
                 .andExpect(jsonPath("$.status", is(400)))
                 .andExpect(jsonPath("$.errors.specialization", is("Specijalizacija ne sme biti prazna.")));
+    }
+
+    @Test
+    @WithMockUser(roles = "PATIENT")
+    void whenGetDoctorAppointments_asPatient_shouldReturnBookedSlots() throws Exception {
+        Long doctorId = 1L;
+        LocalDateTime time1 = LocalDateTime.of(2025, 1, 1, 10, 0);
+        LocalDateTime time2 = LocalDateTime.of(2025, 1, 1, 10, 15);
+        List<BookedSlotDTO> bookedSlots = List.of(
+                new BookedSlotDTO(time1),
+                new BookedSlotDTO(time2)
+        );
+
+        given(doctorService.getDoctorAppointments(doctorId)).willReturn(bookedSlots);
+
+        mockMvc.perform(get("/api/doctors/{doctorId}/appointments", doctorId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].appointmentTime", is(time1.toString() + ":00")))
+                .andExpect(jsonPath("$[1].appointmentTime", is(time2.toString() + ":00")));
     }
 }
