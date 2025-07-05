@@ -41,23 +41,27 @@
 
     <div id="patientView" class="hidden view">
         <h2>Dobrodošli, pacijente!</h2>
+        
         <div class="form-container">
-            <h3>Zakažite novi pregled</h3>
-            <form id="appointmentForm">
-                <label for="doctorId">Izaberite lekara:</label>
-                <select id="doctorId" required></select>
-                <label for="appointmentTime">Izaberite datum i vreme:</label>
-                <input type="datetime-local" id="appointmentTime" required>
-                <button type="submit">Zakaži</button>
+            <h3>Zakažite pregled</h3>
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label for="doctorSelect">Izaberite lekara:</label>
+                    <select id="doctorSelect" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentDate">Izaberite datum:</label>
+                    <input type="date" id="appointmentDate" required>
+                </div>
             </form>
+            <div id="timetableContainer">
+                <p>Izaberite lekara i datum da vidite raspored.</p>
+            </div>
+            <button type="submit" form="bookingForm" id="bookAppointmentBtn" disabled>Zakaži</button>
         </div>
+
         <h3>Vaši termini</h3>
         <div id="patientAppointments"></div>
-
-        <div class="form-container">
-            <h3>Raspored lekara</h3>
-            <div id="timetableContainer"></div>
-        </div>
     </div>
 
     <div id="doctorView" class="hidden view">

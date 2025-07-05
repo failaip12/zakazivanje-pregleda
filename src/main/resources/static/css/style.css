@@ -170,3 +170,41 @@ tr:nth-child(even) {
     cursor: not-allowed;
     text-decoration: line-through;
 }
+
+.time-slot.selected {
+    background-color: #4a90e2;
+    color: white;
+    border-color: #357ebd;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#bookAppointmentBtn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#bookAppointmentBtn:disabled {
+    background-color: #a9a9a9;
+    cursor: not-allowed;
+}
+
+#bookAppointmentBtn:hover:not(:disabled) {
+    background-color: #4cae4c;
+}
