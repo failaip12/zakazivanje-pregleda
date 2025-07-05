@@ -21,19 +21,19 @@
         <div class="form-container">
             <h2>Prijava</h2>
             <form id="loginForm">
-                <input type="text" id="loginUsername" placeholder="Korisničko ime" required>
-                <input type="password" id="loginPassword" placeholder="Lozinka" required>
+                <input type="text" name="username" id="loginUsername" placeholder="Korisničko ime" required>
+                <input type="password" name="password" id="loginPassword" placeholder="Lozinka" required>
                 <button type="submit">Prijavi se</button>
             </form>
         </div>
         <div class="form-container">
             <h2>Registracija Pacijenta</h2>
             <form id="registerForm">
-                <input type="text" id="registerFirstName" placeholder="Ime" required>
-                <input type="text" id="registerLastName" placeholder="Prezime" required>
-                <input type="text" id="registerUsername" placeholder="Username" required>
-                <input type="text" id="registerJMBG" placeholder="JMBG" required>
-                <input type="password" id="registerPassword" placeholder="Lozinka" required>
+                <input type="text" id="registerFirstName" name="firstName" placeholder="Ime" required>
+                <input type="text" id="registerLastName" name="lastName" placeholder="Prezime" required>
+                <input type="text" id="registerUsername" name="username" placeholder="Korisničko ime" required>
+                <input type="text" id="registerJMBG" name="jmbg" placeholder="JMBG" required>
+                <input type="password" id="registerPassword" name="password" placeholder="Lozinka" required>
                 <button type="submit">Registruj se</button>
             </form>
         </div>
@@ -47,11 +47,11 @@
             <form id="bookingForm">
                 <div class="form-group">
                     <label for="doctorSelect">Izaberite lekara:</label>
-                    <select id="doctorSelect" required></select>
+                    <select name = "doctorSelect" id="doctorSelect" required></select>
                 </div>
                 <div class="form-group">
                     <label for="appointmentDate">Izaberite datum:</label>
-                    <input type="date" id="appointmentDate" required>
+                    <input type="date" name="appointmentDate" id="appointmentDate" required>
                 </div>
             </form>
             <div id="timetableContainer">
@@ -91,11 +91,11 @@
         <div class="form-container">
             <h3>Dodaj novog lekara</h3>
             <form id="addDoctorForm">
-                <input type="text" id="doctorFirstName" placeholder="Ime lekara" required>
-                <input type="text" id="doctorLastName" placeholder="Prezime lekara" required>
-                <input type="text" id="doctorUsername" placeholder="Username lekara" required>
-                <input type="password" id="doctorPassword" placeholder="Lozinka" required>
-                <input type="text" id="doctorSpecialization" placeholder="Specijalizacija" required>
+                <input type="text" name="firstName" id="doctorFirstName" placeholder="Ime lekara" required>
+                <input type="text" name="lastName" id="doctorLastName" placeholder="Prezime lekara" required>
+                <input type="text" name="username" id="doctorUsername" placeholder="Username lekara" required>
+                <input type="password" name="password" id="doctorPassword" placeholder="Lozinka" required>
+                <input type="text" name="specialization" id="doctorSpecialization" placeholder="Specijalizacija" required>
                 <button type="submit">Dodaj lekara</button>
             </form>
         </div>
