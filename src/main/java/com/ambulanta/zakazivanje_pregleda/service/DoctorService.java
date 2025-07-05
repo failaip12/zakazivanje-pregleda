@@ -1,7 +1,10 @@
 package com.ambulanta.zakazivanje_pregleda.service;
 
+
 import com.ambulanta.zakazivanje_pregleda.dto.AddDoctorRequestDTO;
+import com.ambulanta.zakazivanje_pregleda.dto.BookedSlotDTO;
 import com.ambulanta.zakazivanje_pregleda.dto.DoctorDTO;
+import com.ambulanta.zakazivanje_pregleda.model.AppointmentStatus;
 import com.ambulanta.zakazivanje_pregleda.model.Doctor;
 import com.ambulanta.zakazivanje_pregleda.model.Role;
 import com.ambulanta.zakazivanje_pregleda.model.User;
@@ -22,6 +25,7 @@ public class DoctorService {
     private final DoctorRepository doctorRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AppointmentService appointmentService;
 
     @Transactional(readOnly = true)
     public List<DoctorDTO> findAllDoctors() {
@@ -51,6 +55,14 @@ public class DoctorService {
         User savedUser = userRepository.save(doctorUser);
 
         return convertToDto(savedUser.getDoctor());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookedSlotDTO> getDoctorAppointments(Long doctorId) {
+        return appointmentService.getAppointmentsForDoctor(doctorId, AppointmentStatus.CONFIRMED)
+                .stream()
+                .map(appointment -> new BookedSlotDTO(appointment.getAppointmentTime()))
+                .collect(Collectors.toList());
     }
 
     private DoctorDTO convertToDto(Doctor doctor) {

@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             patientView.classList.remove('hidden');
             loadDoctorsForPatient();
             loadPatientAppointments();
+            initializeTimetable();
         } else if (role === 'ROLE_DOCTOR') {
             doctorView.classList.remove('hidden');
             loadDoctorAppointments();
@@ -432,6 +433,78 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.field-error').forEach(el => el.remove());
         messageArea.textContent = '';
         messageArea.className = '';
+    }
+
+    function initializeTimetable() {
+        const doctorSelect = document.getElementById('doctorId');
+        const timetableContainer = document.getElementById('timetableContainer');
+        const appointmentTimeInput = document.getElementById('appointmentTime');
+
+        doctorSelect.addEventListener('change', async () => {
+            const doctorId = doctorSelect.value;
+            if (doctorId) {
+                await renderTimetable(doctorId, timetableContainer, appointmentTimeInput);
+            } else {
+                timetableContainer.innerHTML = '<p>Izaberite lekara da vidite raspored.</p>';
+            }
+        });
+
+        timetableContainer.innerHTML = '<p>Izaberite lekara da vidite raspored.</p>';
+    }
+
+    async function renderTimetable(doctorId, container, timeInput) {
+        const token = localStorage.getItem('jwtToken');
+        container.innerHTML = 'Učitavanje rasporeda...';
+
+        try {
+            const response = await fetch(`/api/doctors/${doctorId}/appointments`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Greška pri učitavanju termina lekara.');
+
+            const appointments = await response.json();
+            const bookedTimes = new Set(appointments.map(app => new Date(app.appointmentTime).getTime()));
+
+            const timetableGrid = document.createElement('div');
+            timetableGrid.className = 'timetable';
+
+            const today = new Date();
+            today.setHours(9, 0, 0, 0); 
+
+            for (let i = 0; i < 32; i++) { 
+                const slotTime = new Date(today.getTime() + i * 15 * 60000);
+                if (slotTime.getHours() >= 17) continue;
+
+                const timeSlotDiv = document.createElement('div');
+                timeSlotDiv.className = 'time-slot';
+                timeSlotDiv.textContent = slotTime.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' });
+
+                if (bookedTimes.has(slotTime.getTime())) {
+                    timeSlotDiv.classList.add('unavailable');
+                } else {
+                    timeSlotDiv.classList.add('available');
+                    timeSlotDiv.addEventListener('click', () => {
+                        
+                        const year = today.getFullYear();
+                        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+                        const day = today.getDate().toString().padStart(2, '0');
+                        const hours = slotTime.getHours().toString().padStart(2, '0');
+                        const minutes = slotTime.getMinutes().toString().padStart(2, '0');
+
+                        timeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        
+                        document.querySelectorAll('.time-slot.selected').forEach(s => s.classList.remove('selected'));
+                        timeSlotDiv.classList.add('selected');
+                    });
+                }
+                timetableGrid.appendChild(timeSlotDiv);
+            }
+            container.innerHTML = '';
+            container.appendChild(timetableGrid);
+
+        } catch (error) {
+            container.innerHTML = `<p>${error.message}</p>`;
+        }
     }
 
 });

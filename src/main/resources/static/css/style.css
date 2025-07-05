@@ -130,3 +130,43 @@ tr:nth-child(even) {
     display: block;
     margin: -5px 0 10px 5px;
 }
+
+#timetableContainer {
+    margin-top: 20px;
+}
+
+.timetable {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.time-slot {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.time-slot.available {
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.time-slot.available:hover {
+    background-color: #c8e6c9;
+}
+
+.time-slot.unavailable {
+    background-color: #f2dede;
+    color: #a94442;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
