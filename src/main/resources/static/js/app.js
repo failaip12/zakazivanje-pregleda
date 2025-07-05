@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
             initializePatientView();
         } else if (role === 'ROLE_DOCTOR') {
             doctorView.classList.remove('hidden');
+            const filterSelect = document.getElementById('doctorAppointmentFilter');
+            filterSelect.addEventListener('change', loadDoctorAppointments);
             loadDoctorAppointments();
         } else if (role === 'ROLE_ADMIN') {
             adminView.classList.remove('hidden');
@@ -53,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		
     function initializePatientView() {
         loadDoctorsForPatient();
+        const filterSelect = document.getElementById('appointmentFilter');
+        filterSelect.addEventListener('change', loadPatientAppointments);
         loadPatientAppointments();
         setupBookingForm();
     }
@@ -302,8 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     async function loadPatientAppointments() {
         const token = localStorage.getItem('jwtToken');
+        const appointmentsContainer = document.getElementById('patientAppointments');
+        const filter = document.getElementById('appointmentFilter').value;
 
-        const appointmentsContainer  = document.getElementById('patientAppointments');
         appointmentsContainer.innerHTML = 'Učitavanje termina...';
 
         if (!token) {
@@ -313,18 +318,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/api/appointments?status=CONFIRMED', {
+            const response = await fetch('/api/appointments', {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) {
                 throw new Error('Nije moguće učitati listu termina.');
             }
 
-            const appointments = await response.json();
+            let appointments = await response.json();
+            const now = new Date();
+
+            if (filter === 'future') {
+                appointments = appointments.filter(app => new Date(app.appointmentTime) >= now);
+            } else if (filter === 'past') {
+                appointments = appointments.filter(app => new Date(app.appointmentTime) < now);
+            }
+
+            appointments.sort((a, b) => {
+                const dateA = new Date(a.appointmentTime);
+                const dateB = new Date(b.appointmentTime);
+                return filter === 'past' ? dateB - dateA : dateA - dateB;
+            });
+
             renderAppointmentsTable(appointments, appointmentsContainer, 'patient');
 
         } catch (error) {
@@ -337,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = '';
 
         if (appointments.length === 0) {
-            container.innerHTML = '<p>Nemate zakazanih termina.</p>';
+            container.innerHTML = '<p>Nema termina koji odgovaraju izabranom filteru.</p>';
             return;
         }
 
@@ -408,8 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDoctorAppointments() {
         const token = localStorage.getItem('jwtToken');
-
         const appointmentsContainer = document.getElementById('doctorAppointments');
+        const filter = document.getElementById('doctorAppointmentFilter').value;
+
         appointmentsContainer.innerHTML = 'Učitavanje termina...';
 
         if (!token) {
@@ -418,18 +436,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('/api/appointments?status=CONFIRMED', {
+            const response = await fetch('/api/appointments', {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) {
                 throw new Error('Nije moguće učitati listu zakazivanja.');
             }
 
-            const appointments = await response.json();
+            let appointments = await response.json();
+            const now = new Date();
+
+            if (filter === 'future') {
+                appointments = appointments.filter(app => new Date(app.appointmentTime) >= now);
+            } else if (filter === 'past') {
+                appointments = appointments.filter(app => new Date(app.appointmentTime) < now);
+            }
+
+            appointments.sort((a, b) => {
+                const dateA = new Date(a.appointmentTime);
+                const dateB = new Date(b.appointmentTime);
+                return filter === 'past' ? dateB - dateA : dateA - dateB;
+            });
+
             renderAppointmentsTable(appointments, appointmentsContainer, 'doctor');
 
         } catch (error) {

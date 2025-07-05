@@ -208,3 +208,19 @@ tr:nth-child(even) {
 #bookAppointmentBtn:hover:not(:disabled) {
     background-color: #4cae4c;
 }
+
+.filter-container {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-container label {
+    font-weight: bold;
+}
+
+.filter-container select {
+    width: auto;
+    padding: 8px;
+}

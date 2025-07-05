@@ -61,12 +61,28 @@
         </div>
 
         <h3>Vaši termini</h3>
+        <div class="filter-container">
+            <label for="appointmentFilter">Prikaži termine:</label>
+            <select id="appointmentFilter">
+                <option value="future">Budući</option>
+                <option value="past">Prošli</option>
+                <option value="all">Svi</option>
+            </select>
+        </div>
         <div id="patientAppointments"></div>
     </div>
 
     <div id="doctorView" class="hidden view">
         <h2>Dobrodošli, doktore!</h2>
         <h3>Vaši zakazani termini</h3>
+        <div class="filter-container">
+            <label for="doctorAppointmentFilter">Prikaži termine:</label>
+            <select id="doctorAppointmentFilter">
+                <option value="future">Budući</option>
+                <option value="past">Prošli</option>
+                <option value="all">Svi</option>
+            </select>
+        </div>
         <div id="doctorAppointments"></div>
     </div>
 
