@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
-
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
@@ -84,14 +83,12 @@ public class AppointmentService {
                 if (user.getDoctor() == null) {
                     throw new IllegalStateException("Korisnik sa ulogom doktora nema povezane podatke o doktoru.");
                 }
-
                 return getAppointmentsForDoctor(user.getDoctor().getId(), status);
             }
             case ROLE_PATIENT -> {
                 if (user.getPatient() == null) {
                     throw new IllegalStateException("Korisnik sa ulogom pacijenta nema povezane podatke o pacijentu.");
                 }
-
                 return getAppointmentsForPatient(user.getPatient().getId(), status);
             }
             case ROLE_ADMIN -> {
@@ -101,7 +98,6 @@ public class AppointmentService {
                     return getAllAppointments();
                 }
             }
-
             default -> throw new EnumConstantNotPresentException(Role.class, role.name());
         }
     }

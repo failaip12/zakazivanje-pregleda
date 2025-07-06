@@ -2,7 +2,6 @@ package com.ambulanta.zakazivanje_pregleda.website;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.WaitForSelectorState;
 import org.junit.jupiter.api.*;
 
 import java.time.Instant;
@@ -13,26 +12,6 @@ import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class PatientViewIT extends BaseTest {
-    private static final String MOCK_APPOINTMENTS_JSON = String.format("""
-        [
-          {
-            "id": 201,
-            "appointmentTime": "%s",
-            "status": "CONFIRMED",
-            "doctor": { "firstName": "Jelena", "lastName": "Jelić", "specialization": "Pedijatar" }
-          },
-          {
-            "id": 202,
-            "appointmentTime": "%s",
-            "status": "CONFIRMED",
-            "doctor": { "firstName": "Petar", "lastName": "Petrović", "specialization": "Kardiolog" }
-          }
-        ]
-        """,
-            Instant.now().plus(3, ChronoUnit.DAYS).toString(),   // Future appointment
-            Instant.now().minus(3, ChronoUnit.DAYS).toString() // Past appointment
-    );
-
     @BeforeEach
     void loginAsPatient() {
         String patientToken = createMockJwt("test_patient", List.of("ROLE_PATIENT"));

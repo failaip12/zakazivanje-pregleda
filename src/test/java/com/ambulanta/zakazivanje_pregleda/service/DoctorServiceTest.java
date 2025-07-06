@@ -30,7 +30,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DoctorServiceTest {
-
     @Mock
     private DoctorRepository doctorRepository;
     @Mock

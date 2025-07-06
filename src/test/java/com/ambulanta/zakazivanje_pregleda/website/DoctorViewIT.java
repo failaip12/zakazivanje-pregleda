@@ -12,7 +12,6 @@ import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class DoctorViewIT extends BaseTest {
-
     private static final String MOCK_APPOINTMENTS_JSON = String.format("""
         [
           {

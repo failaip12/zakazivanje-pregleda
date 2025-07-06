@@ -10,7 +10,6 @@ import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 public class AuthIT extends BaseTest {
-
     @Test
     void shouldRegisterPatient() {
         page.route("**/api/auth/register", route -> {
@@ -115,6 +114,7 @@ public class AuthIT extends BaseTest {
         assertThat(page.locator("#adminView")).isVisible();
         assertThat(page.locator("#authView")).isHidden();
     }
+
     @Test
     void shouldLogoutSuccessfully() {
         shouldLoginPatient();

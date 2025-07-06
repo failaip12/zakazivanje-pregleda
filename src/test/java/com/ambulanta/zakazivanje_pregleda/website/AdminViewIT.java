@@ -11,7 +11,6 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AdminViewIT extends BaseTest {
-
     @BeforeEach
     void loginAsAdmin() {
         String adminToken = createMockJwt("super_admin", List.of("ROLE_ADMIN"));
@@ -61,6 +60,7 @@ public class AdminViewIT extends BaseTest {
         assertThat(page.locator("#messageArea")).hasText("Novi doktor je uspešno dodat!");
         assertThat(page.locator("#doctorFirstName")).isEmpty();
     }
+
     @Test
     void shouldDisplayValidationErrorsWhenAddingDoctorFails() {
         page.route("**/api/doctors", route -> {

@@ -2,8 +2,6 @@ package com.ambulanta.zakazivanje_pregleda;
 
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.AppointmentRepository;
-import com.ambulanta.zakazivanje_pregleda.repository.DoctorRepository;
-import com.ambulanta.zakazivanje_pregleda.repository.PatientRepository;
 import com.ambulanta.zakazivanje_pregleda.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +12,6 @@ import java.time.LocalTime;
 
 @Component
 public class InitialLoad implements CommandLineRunner {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppointmentRepository appointmentRepository;
@@ -93,6 +90,7 @@ public class InitialLoad implements CommandLineRunner {
         appointment8.setPatient(userRepository.findByUsername("MarMar").orElseThrow().getPatient());
         appointmentRepository.save(appointment8);
     }
+
     private void loadAdminData() {
         User admin = new User();
         admin.setUsername("admin");

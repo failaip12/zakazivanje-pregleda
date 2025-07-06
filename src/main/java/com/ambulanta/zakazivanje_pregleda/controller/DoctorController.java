@@ -16,7 +16,6 @@ import java.util.List;
 @RequestMapping("/api/doctors")
 @RequiredArgsConstructor
 public class DoctorController {
-
     private final DoctorService doctorService;
 
     @GetMapping
@@ -24,6 +23,7 @@ public class DoctorController {
         List<DoctorDTO> doctors = doctorService.findAllDoctors();
         return ResponseEntity.ok(doctors);
     }
+
     @PostMapping
     public ResponseEntity<DoctorDTO> addNewDoctor(@Valid @RequestBody AddDoctorRequestDTO request) {
         DoctorDTO newDoctor = doctorService.addDoctor(request);

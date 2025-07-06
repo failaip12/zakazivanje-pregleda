@@ -10,11 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
-    Optional<Appointment> findByDoctorAndAppointmentTimeAndStatus(Doctor doctor, LocalDateTime appointmentTime, AppointmentStatus status);
-
     @Query("SELECT a FROM Appointment a " +
             "JOIN FETCH a.patient p JOIN FETCH p.user " +
             "JOIN FETCH a.doctor d JOIN FETCH d.user")

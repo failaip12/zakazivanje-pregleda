@@ -8,10 +8,8 @@ import java.time.LocalDateTime;
 
 @Data
 public class AppointmentRequestDTO {
-
     @NotNull(message = "Id lekara ne sme biti prazan.")
     private Long doctorId;
-
 
     @NotNull(message = "Vreme pregleda mora biti definisano.")
     @Future(message = "Vreme pregleda mora biti u budućnosti.")

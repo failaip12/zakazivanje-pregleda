@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
 @Data
 public class AppointmentResponseDTO {
     private Long id;
+
     private PatientDTO patient;
     private DoctorDTO doctor;
+
     private LocalDateTime appointmentTime;
     private AppointmentStatus status;
 }

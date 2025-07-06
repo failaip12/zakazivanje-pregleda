@@ -12,7 +12,6 @@ import org.eclipse.jetty.server.Server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.URL;
 
 public class BaseTest {
     protected static String BASE_URL = "http://localhost:8080";

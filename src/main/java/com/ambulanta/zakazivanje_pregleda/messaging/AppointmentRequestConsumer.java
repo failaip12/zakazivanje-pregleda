@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AppointmentRequestConsumer {
-
     @Autowired
     private AppointmentService appointmentService;
 

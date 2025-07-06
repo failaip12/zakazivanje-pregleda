@@ -8,7 +8,6 @@ import java.util.Map;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiErrorResponseDTO {
-
     private LocalDateTime timestamp;
     private int status;
     private String error;

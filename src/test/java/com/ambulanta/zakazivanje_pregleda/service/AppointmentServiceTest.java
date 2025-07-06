@@ -30,7 +30,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AppointmentServiceTest {
-
     @Mock
     private AppointmentRepository appointmentRepository;
     @Mock
@@ -162,7 +161,6 @@ class AppointmentServiceTest {
     void whenCreateAppointment_withTimeOutsideWorkingHours_shouldThrowInvalidAppointmentTimeException() {
         requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 8, 0));
 
-        // WHEN & THEN
         InvalidAppointmentTimeException thrown = assertThrows(
                 InvalidAppointmentTimeException.class,
                 () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")
@@ -174,7 +172,6 @@ class AppointmentServiceTest {
     void whenCreateAppointment_withTimeAtEndOfWorkingHours_shouldThrowInvalidAppointmentTimeException() {
         requestDTO.setAppointmentTime(LocalDateTime.of(2025, 1, 1, 17, 0));
 
-        // WHEN & THEN
         InvalidAppointmentTimeException thrown = assertThrows(
                 InvalidAppointmentTimeException.class,
                 () -> appointmentService.createAppointmentRequest(requestDTO, "1111111111111")

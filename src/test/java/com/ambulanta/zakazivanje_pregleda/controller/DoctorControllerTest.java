@@ -34,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = DoctorController.class)
 @Import({SecurityConfig.class, JwtAuthFilter.class})
 class DoctorControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
     @Autowired

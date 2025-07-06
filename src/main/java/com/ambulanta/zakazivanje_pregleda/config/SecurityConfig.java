@@ -22,7 +22,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
@@ -35,15 +34,14 @@ public class SecurityConfig {
                 )
         )
         .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .requestMatchers("/", "/index.html").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/appointments").hasRole("PATIENT")
+                .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/appointments").hasAnyRole("DOCTOR", "PATIENT", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/appointments").hasRole("PATIENT")
                 .requestMatchers(HttpMethod.GET, "/api/doctors").hasAnyRole("PATIENT", "ADMIN", "DOCTOR")
-                .requestMatchers(HttpMethod.GET, "/api/doctors/{doctorId}/appointments").hasAnyRole("PATIENT", "ADMIN", "DOCTOR")
                 .requestMatchers(HttpMethod.POST, "/api/doctors").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/doctors/{doctorId}/appointments").hasAnyRole("PATIENT", "ADMIN", "DOCTOR")
                 .anyRequest().authenticated()
         )
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DoctorService {
-
     private final DoctorRepository doctorRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -70,7 +69,6 @@ public class DoctorService {
         if (doctorUser == null) {
             return new DoctorDTO(doctor.getId(), "N/A", "N/A", doctor.getSpecialization());
         }
-
         return new DoctorDTO(
                 doctor.getId(),
                 doctorUser.getFirstName(),
