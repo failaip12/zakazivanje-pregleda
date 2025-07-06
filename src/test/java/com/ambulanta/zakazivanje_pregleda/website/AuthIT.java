@@ -2,103 +2,127 @@ package com.ambulanta.zakazivanje_pregleda.website;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.WaitForSelectorState;
 import org.junit.jupiter.api.*;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
+import java.util.List;
+
+import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class AuthIT {
-
-    @LocalServerPort
-    private int port;
-
-    // Shared between all tests in this class.
-    static Playwright playwright;
-    static Browser browser;
-
-    // New instance for each test method.
-    BrowserContext context;
-    Page page;
-
-    @BeforeAll
-    static void launchBrowser() {
-        playwright = Playwright.create();
-        browser = playwright.chromium().launch();
-    }
-
-    @AfterAll
-    static void closeBrowser() {
-        playwright.close();
-    }
-
-    @BeforeEach
-    void createContextAndPage() {
-        context = browser.newContext();
-        page = context.newPage();
-    }
-
-    @AfterEach
-    void closeContext() {
-        context.close();
-    }
+public class AuthIT extends BaseTest {
 
     @Test
     void shouldRegisterPatient() {
-        page.navigate("http://localhost:" + port + "/");
+        page.route("**/api/auth/register", route -> {
+            route.fulfill(new Route.FulfillOptions().setStatus(201));
+        });
+
+        page.navigate(BASE_URL);
 
         page.locator("#registerFirstName").click();
-        page.locator("#registerFirstName").fill("test");
+        page.locator("#registerFirstName").fill("Pera");
         page.locator("#registerLastName").click();
-        page.locator("#registerLastName").fill("test");
+        page.locator("#registerLastName").fill("Peric");
         page.locator("#registerUsername").click();
-        page.locator("#registerUsername").fill("test");
+        page.locator("#registerUsername").fill("pera.peric");
         page.locator("#registerJMBG").click();
         page.locator("#registerJMBG").fill("1234567890123");
         page.locator("#registerPassword").click();
-        page.locator("#registerPassword").fill("test");
+        page.locator("#registerPassword").fill("password123");
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Registruj se")).click();
 
-        assertThat(page.getByText("Uspešno ste se registrovali. Sada se možete prijaviti.")).isVisible();
+        assertThat(page.getByText("Uspešna registracija! Sada se možete prijaviti.")).isVisible();
+        assertThat(page.locator("#messageArea")).hasClass("success");
     }
 
     @Test
     void shouldLoginPatient() {
-        page.navigate("http://localhost:" + port + "/");
+        String patientToken = createMockJwt("patient_user", List.of("ROLE_PATIENT"));
+        page.route("**/api/auth/login", route -> {
+            route.fulfill(new Route.FulfillOptions()
+                    .setStatus(200)
+                    .setContentType("application/json")
+                    .setBody(String.format("{\"token\":\"%s\"}", patientToken))
+            );
+        });
+
+        page.route("**/api/doctors", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200).setBody("[]")));
+        page.route("**/api/appointments", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200).setBody("[]")));
+
+        page.navigate(BASE_URL);
 
         page.getByPlaceholder("Korisničko ime").first().click();
-        page.getByPlaceholder("Korisničko ime").first().fill("test");
+        page.getByPlaceholder("Korisničko ime").first().fill("patient_user");
         page.getByPlaceholder("Lozinka").first().click();
-        page.getByPlaceholder("Lozinka").first().fill("test");
+        page.getByPlaceholder("Lozinka").first().fill("password");
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
-        page.locator("#patientView").waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+
         assertThat(page.getByText("Dobrodošli, pacijente!")).isVisible();
+        assertThat(page.locator("#patientView")).isVisible();
+        assertThat(page.locator("#authView")).isHidden();
+        assertThat(page.locator("#welcomeMessage")).containsText("Prijavljeni ste kao: patient_user");
     }
 
     @Test
     void shouldLoginDoctor() {
-        page.navigate("http://localhost:" + port + "/");
+        String doctorToken = createMockJwt("doctor_user", List.of("ROLE_DOCTOR"));
+        page.route("**/api/auth/login", route -> {
+            route.fulfill(new Route.FulfillOptions()
+                    .setStatus(200)
+                    .setContentType("application/json")
+                    .setBody(String.format("{\"token\":\"%s\"}", doctorToken))
+            );
+        });
+
+        page.route("**/api/appointments", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200).setBody("[]")));
+
+        page.navigate(BASE_URL);
 
         page.getByPlaceholder("Korisničko ime").first().click();
-        page.getByPlaceholder("Korisničko ime").first().fill("doktor");
+        page.getByPlaceholder("Korisničko ime").first().fill("doctor_user");
         page.getByPlaceholder("Lozinka").first().click();
-        page.getByPlaceholder("Lozinka").first().fill("doktor");
+        page.getByPlaceholder("Lozinka").first().fill("password");
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
+
         assertThat(page.getByText("Dobrodošli, doktore!")).isVisible();
+        assertThat(page.locator("#doctorView")).isVisible();
+        assertThat(page.locator("#authView")).isHidden();
     }
 
     @Test
     void shouldLoginAdmin() {
-        page.navigate("http://localhost:" + port + "/");
+        String adminToken = createMockJwt("admin_user", List.of("ROLE_ADMIN"));
+        page.route("**/api/auth/login", route -> {
+            route.fulfill(new Route.FulfillOptions()
+                    .setStatus(200)
+                    .setContentType("application/json")
+                    .setBody(String.format("{\"token\":\"%s\"}", adminToken))
+            );
+        });
+
+        page.navigate(BASE_URL);
 
         page.getByPlaceholder("Korisničko ime").first().click();
-        page.getByPlaceholder("Korisničko ime").first().fill("admin");
+        page.getByPlaceholder("Korisničko ime").first().fill("admin_user");
         page.getByPlaceholder("Lozinka").first().click();
-        page.getByPlaceholder("Lozinka").first().fill("admin");
+        page.getByPlaceholder("Lozinka").first().fill("password");
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
-        page.waitForURL("**/admin");
+
         assertThat(page.getByText("Administracija")).isVisible();
+        assertThat(page.locator("#adminView")).isVisible();
+        assertThat(page.locator("#authView")).isHidden();
+    }
+    @Test
+    void shouldLogoutSuccessfully() {
+        shouldLoginPatient();
+
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Odjavi se")).click();
+
+        assertThat(page.locator("#authView")).isVisible();
+        assertThat(page.locator("#userInfo")).isHidden();
+        assertThat(page.locator("#messageArea")).hasText("Uspešno ste se odjavili.");
     }
 }

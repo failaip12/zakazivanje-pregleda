@@ -3,70 +3,93 @@ package com.ambulanta.zakazivanje_pregleda.website;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.*;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class DoctorViewIT {
+public class DoctorViewIT extends BaseTest {
 
-    @LocalServerPort
-    private int port;
-
-    // Shared between all tests in this class.
-    static Playwright playwright;
-    static Browser browser;
-    static BrowserType.LaunchOptions launchOptions;
-
-    // New instance for each test method.
-    BrowserContext context;
-    Page page;
-
-    @BeforeAll
-    static void launchBrowser() {
-        launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
-        playwright = Playwright.create();
-        browser = playwright.chromium().launch(launchOptions);
-    }
-
-    @AfterAll
-    static void closeBrowser() {
-        playwright.close();
-    }
+    private static final String MOCK_APPOINTMENTS_JSON = String.format("""
+        [
+          {
+            "id": 101,
+            "appointmentTime": "%s",
+            "status": "CONFIRMED",
+            "patient": { "firstName": "Ana", "lastName": "Anić", "jmbg": "1111111111111" }
+          },
+          {
+            "id": 102,
+            "appointmentTime": "%s",
+            "status": "CONFIRMED",
+            "patient": { "firstName": "Marko", "lastName": "Marković", "jmbg": "2222222222222" }
+          }
+        ]
+        """,
+            Instant.now().plus(5, ChronoUnit.DAYS).toString(),
+            Instant.now().minus(5, ChronoUnit.DAYS).toString()
+    );
 
     @BeforeEach
-    void createContextAndPage() {
-        context = browser.newContext();
-        page = context.newPage();
-        page.navigate("http://localhost:" + port + "/");
+    void loginAsDoctor() {
+        String doctorToken = createMockJwt("dr_house", List.of("ROLE_DOCTOR"));
+
+        page.route("**/api/auth/login", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody(String.format("{\"token\":\"%s\"}", doctorToken))));
+
+        page.route("**/api/appointments?status=CONFIRMED", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody(MOCK_APPOINTMENTS_JSON)));
+
+        page.navigate(BASE_URL);
         page.getByPlaceholder("Korisničko ime").first().click();
-        page.getByPlaceholder("Korisničko ime").first().fill("doktor");
+        page.getByPlaceholder("Korisničko ime").first().fill("dr_house");
         page.getByPlaceholder("Lozinka").first().click();
-        page.getByPlaceholder("Lozinka").first().fill("doktor");
+        page.getByPlaceholder("Lozinka").first().fill("password");
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
-    }
 
-    @AfterEach
-    void closeContext() {
-        context.close();
-    }
-
-    @Test
-    void shouldShowFutureAppointments() {
-        page.locator("#doctorAppointmentFilter").selectOption("future");
-        assertThat(page.getByText("Zakazani termini")).isVisible();
+        assertThat(page.locator("#doctorView")).isVisible();
+        assertThat(page.locator("#welcomeMessage")).containsText("Prijavljeni ste kao: dr_house");
     }
 
     @Test
-    void shouldShowPastAppointments() {
+    void shouldShowFutureAppointmentsByDefault() {
+        assertThat(page.locator("#doctorAppointments")).containsText("Ana Anić");
+        assertThat(page.locator("#doctorAppointments")).not().containsText("Marko Marković");
+    }
+
+    @Test
+    void shouldDisplayPastAppointmentsWhenFilterIsChanged() {
         page.locator("#doctorAppointmentFilter").selectOption("past");
-        assertThat(page.getByText("Nema prošlih termina.")).isVisible();
+
+        assertThat(page.locator("#doctorAppointments")).containsText("Marko Marković");
+        assertThat(page.locator("#doctorAppointments")).not().containsText("Ana Anić");
     }
 
     @Test
-    void shouldShowAllAppointments() {
+    void shouldDisplayAllAppointmentsWhenFilterIsChanged() {
         page.locator("#doctorAppointmentFilter").selectOption("all");
-        assertThat(page.getByText("Zakazani termini")).isVisible();
+
+        assertThat(page.locator("#doctorAppointments")).containsText("Ana Anić");
+        assertThat(page.locator("#doctorAppointments")).containsText("Marko Marković");
+    }
+
+    @Test
+    void shouldShowMessageWhenNoAppointmentsMatchFilter() {
+        page.route("**/api/appointments?status=CONFIRMED", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody("[]")));
+
+        page.locator("#doctorAppointmentFilter").selectOption("all");
+
+        assertThat(page.locator("#doctorAppointments"))
+                .containsText("Nema termina koji odgovaraju izabranom filteru.");
     }
 }

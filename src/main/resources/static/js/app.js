@@ -376,23 +376,30 @@ document.addEventListener("DOMContentLoaded", () => {
         const timetableGrid = document.createElement("div");
         timetableGrid.className = "timetable";
 
-        const baseDate = new Date(selectedDate);
-        baseDate.setHours(9, 0, 0, 0);
+        const [year, month, day] = selectedDate.split("-").map(Number);
 
         for (let i = 0; i < 32; i++) {
-          // 8 hours * 4 slots/hour
-          const slotTime = new Date(baseDate.getTime() + i * 15 * 60000);
-          if (slotTime.getHours() >= 17) continue;
+          const hour = 9 + Math.floor((i * 15) / 60);
+          const minute = (i * 15) % 60;
+
+          if (hour >= 17) continue;
+
+          const slotTimeObject = new Date(year, month - 1, day, hour, minute);
 
           const timeSlotDiv = document.createElement("div");
           timeSlotDiv.className = "time-slot";
-          timeSlotDiv.textContent = slotTime.toLocaleTimeString("sr-RS", {
+          timeSlotDiv.textContent = slotTimeObject.toLocaleTimeString("sr-RS", {
             hour: "2-digit",
             minute: "2-digit",
           });
-          timeSlotDiv.dataset.time = slotTime.toISOString();
 
-          if (bookedTimes.has(slotTime.getTime())) {
+          const localTimeString = `${selectedDate}T${String(hour).padStart(
+            2,
+            "0",
+          )}:${String(minute).padStart(2, "0")}`;
+          timeSlotDiv.dataset.time = localTimeString;
+
+          if (bookedTimes.has(slotTimeObject.getTime())) {
             timeSlotDiv.classList.add("unavailable");
           } else {
             timeSlotDiv.classList.add("available");
@@ -408,7 +415,9 @@ document.addEventListener("DOMContentLoaded", () => {
               .querySelectorAll(".time-slot.selected")
               .forEach((s) => s.classList.remove("selected"));
             e.target.classList.add("selected");
-            this.state.selectedSlotTime = new Date(e.target.dataset.time);
+
+            this.state.selectedSlotTime = e.target.dataset.time;
+
             this.elements.bookAppointmentBtn.disabled = false;
           }
         });
@@ -425,9 +434,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const doctorId = this.elements.doctorSelect.value;
-      const appointmentTime = this.state.selectedSlotTime
-        .toISOString()
-        .slice(0, 16);
+      const appointmentTime = this.state.selectedSlotTime;
 
       try {
         await this.apiFetch(config.api.routes.appointments, {

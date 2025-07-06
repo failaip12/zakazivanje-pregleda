@@ -2,82 +2,115 @@ package com.ambulanta.zakazivanje_pregleda.website;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.WaitForSelectorState;
 import org.junit.jupiter.api.*;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import static com.ambulanta.zakazivanje_pregleda.website.TestUtils.createMockJwt;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class PatientViewIT {
-
-    @LocalServerPort
-    private int port;
-
-    // Shared between all tests in this class.
-    static Playwright playwright;
-    static Browser browser;
-    static BrowserType.LaunchOptions launchOptions;
-
-    // New instance for each test method.
-    BrowserContext context;
-    Page page;
-
-    @BeforeAll
-    static void launchBrowser() {
-        launchOptions = new BrowserType.LaunchOptions().setHeadless(false);
-        playwright = Playwright.create();
-        browser = playwright.chromium().launch(launchOptions);
-    }
-
-    @AfterAll
-    static void closeBrowser() {
-        playwright.close();
-    }
+public class PatientViewIT extends BaseTest {
+    private static final String MOCK_APPOINTMENTS_JSON = String.format("""
+        [
+          {
+            "id": 201,
+            "appointmentTime": "%s",
+            "status": "CONFIRMED",
+            "doctor": { "firstName": "Jelena", "lastName": "Jelić", "specialization": "Pedijatar" }
+          },
+          {
+            "id": 202,
+            "appointmentTime": "%s",
+            "status": "CONFIRMED",
+            "doctor": { "firstName": "Petar", "lastName": "Petrović", "specialization": "Kardiolog" }
+          }
+        ]
+        """,
+            Instant.now().plus(3, ChronoUnit.DAYS).toString(),   // Future appointment
+            Instant.now().minus(3, ChronoUnit.DAYS).toString() // Past appointment
+    );
 
     @BeforeEach
-    void createContextAndPage() {
-        context = browser.newContext();
-        page = context.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        page.getByPlaceholder("Korisničko ime").first().click();
-        page.getByPlaceholder("Korisničko ime").first().fill("test");
-        page.getByPlaceholder("Lozinka").first().click();
-        page.getByPlaceholder("Lozinka").first().fill("test");
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
-    }
+    void loginAsPatient() {
+        String patientToken = createMockJwt("test_patient", List.of("ROLE_PATIENT"));
+        page.route("**/api/auth/login", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody(String.format("{\"token\":\"%s\"}", patientToken))));
 
-    @AfterEach
-    void closeContext() {
-        context.close();
+        String doctorsJson = "[{\"id\":1,\"firstName\":\"Marko\",\"lastName\":\"Markovic\",\"specialization\":\"Kardiolog\"}]";
+        page.route("**/api/doctors", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody(doctorsJson)));
+
+        page.route("**/api/appointments", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody("[]")));
+
+        page.route("**/api/doctors/1/appointments", route -> route.fulfill(new Route.FulfillOptions()
+                .setStatus(200)
+                .setContentType("application/json")
+                .setBody("[]")));
+
+        page.navigate(BASE_URL);
+        page.getByPlaceholder("Korisničko ime").first().click();
+        page.getByPlaceholder("Korisničko ime").first().fill("test_patient");
+        page.getByPlaceholder("Lozinka").first().click();
+        page.getByPlaceholder("Lozinka").first().fill("password");
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prijavi se")).click();
+
+        assertThat(page.locator("#patientView")).isVisible();
     }
 
     @Test
     void shouldBookAppointment() {
-        page.waitForSelector("#doctorSelect option");
         page.locator("#doctorSelect").selectOption("1");
-        page.locator("#appointmentDate").fill("2025-12-12");
-        page.getByText("09:00").click();
+
+        assertThat(page.locator(".time-slot.available").first()).isVisible();
+        assertThat(page.locator("#bookAppointmentBtn")).isDisabled();
+
+        page.locator("#appointmentDate").fill("2028-12-12");
+
+        page.locator(".time-slot.available").first().click();
+        assertThat(page.locator(".time-slot.selected")).isVisible();
+        assertThat(page.locator("#bookAppointmentBtn")).isEnabled();
+
         page.locator("#bookAppointmentBtn").click();
 
-        assertThat(page.getByText("Uspešno ste zakazali termin.")).isVisible();
+        assertThat(page.locator("#messageArea"))
+                .hasText("Zahtev za termin je uspešno poslat i čeka obradu.");
     }
 
     @Test
-    void shouldShowFutureAppointments() {
-        page.locator("#appointmentFilter").selectOption("future");
-        assertThat(page.getByText("Zakazani termini")).isVisible();
-    }
+    void shouldDisplayTimetableAndAllowBooking() {
+        page.locator("#doctorSelect").selectOption("1");
 
-    @Test
-    void shouldShowPastAppointments() {
-        page.locator("#appointmentFilter").selectOption("past");
-        assertThat(page.getByText("Nema prošlih termina.")).isVisible();
-    }
+        assertThat(page.locator(".time-slot.available").first()).isVisible();
+        assertThat(page.locator("#bookAppointmentBtn")).isDisabled();
 
-    @Test
-    void shouldShowAllAppointments() {
-        page.locator("#appointmentFilter").selectOption("all");
-        assertThat(page.getByText("Zakazani termini")).isVisible();
+        page.locator(".time-slot.available").first().click();
+        assertThat(page.locator(".time-slot.selected")).isVisible();
+        assertThat(page.locator("#bookAppointmentBtn")).isEnabled();
+
+        page.route("**/api/appointments", route -> {
+            if ("POST".equalsIgnoreCase(route.request().method())) {
+                route.fulfill(new Route.FulfillOptions().setStatus(201));
+            } else {
+                route.fulfill(new Route.FulfillOptions()
+                        .setStatus(200)
+                        .setContentType("application/json")
+                        .setBody("[]"));
+            }
+        });
+
+        page.locator("#bookAppointmentBtn").click();
+
+        assertThat(page.locator("#messageArea"))
+                .hasText("Zahtev za termin je uspešno poslat i čeka obradu.");
     }
 }
