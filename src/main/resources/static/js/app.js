@@ -514,7 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (errorData.message) {
         this.showMessage(errorData.message, "error");
       }
-
+      let message = "";
       if (errorData.errors && formElement) {
         for (const field in errorData.errors) {
           const inputElement = formElement.querySelector(`[name="${field}"]`);
@@ -524,6 +524,13 @@ document.addEventListener("DOMContentLoaded", () => {
             errorSpan.textContent = errorData.errors[field];
             inputElement.insertAdjacentElement("afterend", errorSpan);
           }
+          else {
+            message+=errorData.errors[field];
+            message+=" ";
+          }
+        }
+        if(message !== "") {
+          this.showMessage(message, "error");
         }
       }
     },
