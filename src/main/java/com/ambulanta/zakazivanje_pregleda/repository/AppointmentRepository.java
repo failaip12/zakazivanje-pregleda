@@ -54,7 +54,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
             "AND a.appointmentTime < :upperBound")
     List<Appointment> findConflictingAppointments(
             @Param("doctor") Doctor doctor,
-            @Param("newAppointmentTime") LocalDateTime newAppointmentTime,
             @Param("lowerBound") LocalDateTime lowerBound,
             @Param("upperBound") LocalDateTime upperBound
     );

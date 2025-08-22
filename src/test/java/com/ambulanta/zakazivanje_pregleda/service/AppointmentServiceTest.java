@@ -222,7 +222,7 @@ class AppointmentServiceTest {
 
         when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
 
-        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of());
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any())).thenReturn(List.of());
 
         appointmentService.processAppointment(1L);
 
@@ -240,7 +240,7 @@ class AppointmentServiceTest {
 
         when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
 
-        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of(existingAppointment));
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any())).thenReturn(List.of(existingAppointment));
 
         appointmentService.processAppointment(1L);
 
@@ -256,7 +256,7 @@ class AppointmentServiceTest {
         Appointment existingAppointment = new Appointment(2L, new Patient(), doctor, appointmentTime, AppointmentStatus.CONFIRMED);
 
         when(appointmentRepository.findById(1L)).thenReturn(Optional.of(appointmentToProcess));
-        when(appointmentRepository.findConflictingAppointments(any(), any(), any(), any())).thenReturn(List.of(existingAppointment));
+        when(appointmentRepository.findConflictingAppointments(any(), any(), any())).thenReturn(List.of(existingAppointment));
 
         appointmentService.processAppointment(1L);
 
