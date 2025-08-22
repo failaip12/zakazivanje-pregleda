@@ -8,9 +8,9 @@ import com.ambulanta.zakazivanje_pregleda.exception.*;
 import com.ambulanta.zakazivanje_pregleda.messaging.AppointmentRequestProducer;
 import com.ambulanta.zakazivanje_pregleda.model.*;
 import com.ambulanta.zakazivanje_pregleda.repository.*;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -57,7 +57,7 @@ public class AppointmentService {
 
         return savedAppointment;
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAppointmentsForDoctor(Long doctorId, AppointmentStatus status) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new DoctorNotFoundException("Doktor sa ID: " + doctorId + " nije pronađen."));
@@ -73,7 +73,7 @@ public class AppointmentService {
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAppointmentsForUser(String username, AppointmentStatus status) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("Korisnik sa username: " + username + " nije pronađen."));
@@ -101,7 +101,7 @@ public class AppointmentService {
             default -> throw new EnumConstantNotPresentException(Role.class, role.name());
         }
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAppointmentsForPatient(Long patientId, AppointmentStatus status) {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Pacijent sa ID: " + patientId + " nije pronađen."));
@@ -130,7 +130,6 @@ public class AppointmentService {
 
         List<Appointment> conflictingAppointments = appointmentRepository.findConflictingAppointments(
                 appointment.getDoctor(),
-                newAppointmentTime,
                 lowerBound,
                 upperBound
         );
@@ -146,13 +145,14 @@ public class AppointmentService {
         appointmentRepository.save(appointment);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAllAppointments() {
         return appointmentRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AppointmentResponseDTO> getAppointmentsByStatus(AppointmentStatus status) {
         return appointmentRepository.findByStatus(status).stream()
                 .map(this::convertToDto)
